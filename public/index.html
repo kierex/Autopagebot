@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto PageBot - Messenger Automation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .version {
+            font-size: 1rem;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.9rem;
+        }
+
+        /* Cards */
+        .connect-section, .setup-guide, .sessions-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .connect-section h2, .sessions-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #1a1a2e;
+        }
+
+        .connect-desc {
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+
+        /* Forms */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .optional {
+            color: #999;
+            font-weight: normal;
+            font-size: 0.8rem;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .btn-connect {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+        }
+
+        /* Setup Guide */
+        .setup-guide h3 {
+            font-size: 1rem;
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+
+        .guide-item {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .guide-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 100px;
+        }
+
+        .guide-item code {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            flex: 1;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .copy-btn:hover {
+            background: #5a67d8;
+        }
+
+        /* Sessions */
+        .sessions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .online-count {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .sessions-list {
+            min-height: 200px;
+        }
+
+        .session-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .session-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .session-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .session-badge {
+            background: #27ae60;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        .session-details {
+            display: flex;
+            gap: 16px;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .session-details a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .session-details a:hover {
+            text-decoration: underline;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-disconnect {
+            padding: 6px 12px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .btn-disconnect:hover {
+            background: #c0392b;
+        }
+
+        /* Messages */
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        .empty-sessions {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.8rem;
+            margin-top: 40px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 15px;
+            }
+            
+            .connect-section, .setup-guide, .sessions-section {
+                padding: 20px;
+            }
+            
+            .guide-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .guide-label {
+                min-width: auto;
+            }
+            
+            .session-details {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Auto PageBot <span class="version">v25.0</span></h1>
+            <p class="subtitle" id="siteUrl">loading...</p>
+        </div>
+
+        <!-- Connect Section -->
+        <div class="connect-section">
+            <h2>Connect your page</h2>
+            <p class="connect-desc">Paste your Page Token to link your Facebook page and start automating Messenger.</p>
+            
+            <form id="connectForm">
+                <div class="input-group">
+                    <label>YOUR NAME <span class="optional">(optional)</span></label>
+                    <input type="text" id="userName" placeholder="e.g. John Doe">
+                </div>
+                
+                <div class="input-group">
+                    <label>PAGE NAME <span class="optional">(optional)</span></label>
+                    <input type="text" id="pageName" placeholder="e.g. My Awesome Page">
+                </div>
+                
+                <div class="input-group">
+                    <label>PAGE TOKEN <span class="required">*</span></label>
+                    <textarea id="pageToken" rows="3" placeholder="Paste your Page Access Token here..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn-connect">Connect Page →</button>
+            </form>
+            
+            <div id="message" class="message"></div>
+        </div>
+
+        <!-- Setup Guide -->
+        <div class="setup-guide">
+            <h3>🔧 SETUP GUIDE</h3>
+            <div class="guide-content">
+                <div class="guide-item">
+                    <span class="guide-label">Webhook URL</span>
+                    <code id="webhookUrl">https://your-domain.railway.app/webhook</code>
+                    <button class="copy-btn" onclick="copyToClipboard('webhookUrl')">Copy</button>
+                </div>
+                <div class="guide-item">
+                    <span class="guide-label">Verify Token</span>
+                    <code id="verifyToken">shipazu</code>
+                    <button class="copy-btn" onclick="copyToClipboard('verifyToken')">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Online Sessions -->
+        <div class="sessions-section">
+            <div class="sessions-header">
+                <h2>Online Sessions</h2>
+                <span class="online-count" id="onlineCount">0</span>
+            </div>
+            <div id="sessionsList" class="sessions-list">
+                <div class="loading">Loading sessions...</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Auto PageBot — Messenger Automation</p>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = window.location.origin;
+        
+        // Update URL in header
+        document.getElementById('siteUrl').textContent = window.location.hostname;
+        
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSessions();
+            setInterval(loadSessions, 30000); // Refresh every 30 seconds
+            updateWebhookUrl();
+        });
+        
+        // Handle connect form submission
+        document.getElementById('connectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userName = document.getElementById('userName').value;
+            const pageName = document.getElementById('pageName').value;
+            const pageToken = document.getElementById('pageToken').value;
+            
+            if (!pageToken) {
+                showMessage('Please enter a page token', 'error');
+                return;
+            }
+            
+            showMessage('Connecting page...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/connect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName, pageName, pageToken })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(`✅ ${data.message}`, 'success');
+                    document.getElementById('userName').value = '';
+                    document.getElementById('pageName').value = '';
+                    document.getElementById('pageToken').value = '';
+                    loadSessions();
+                } else {
+                    showMessage(`❌ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Connection failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Load online sessions
+        async function loadSessions() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sessions`);
+                const data = await response.json();
+                
+                const sessionsList = document.getElementById('sessionsList');
+                const onlineCount = document.getElementById('onlineCount');
+                
+                onlineCount.textContent = data.count;
+                
+                if (!data.sessions || data.sessions.length === 0) {
+                    sessionsList.innerHTML = '<div class="empty-sessions">✨ No active sessions. Connect a page to get started!</div>';
+                    return;
+                }
+                
+                sessionsList.innerHTML = data.sessions.map(session => `
+                    <div class="session-card">
+                        <div class="session-header">
+                            <span class="session-name">${escapeHtml(session.name)}</span>
+                            <span class="session-badge">● Online</span>
+                        </div>
+                        <div class="session-details">
+                            <span>📄 ID: ${session.id}</span>
+                            <span>👤 Owner: ${escapeHtml(session.owner || 'Unknown')}</span>
+                            <a href="${session.messengerLink}" target="_blank">💬 m.me/${session.id}</a>
+                        </div>
+                        <div class="session-actions">
+                            <button class="btn-disconnect" onclick="disconnectPage('${session.id}')">Disconnect</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+                document.getElementById('sessionsList').innerHTML = '<div class="empty-sessions">⚠️ Failed to load sessions. Make sure the server is running.</div>';
+            }
+        }
+        
+        // Disconnect page
+        async function disconnectPage(pageId) {
+            if (!confirm('Are you sure you want to disconnect this page?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/disconnect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pageId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ Page disconnected successfully', 'success');
+                    loadSessions();
+                } else {
+                    showMessage('❌ Failed to disconnect page', 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Update webhook URL in setup guide
+        function updateWebhookUrl() {
+            const webhookUrl = document.getElementById('webhookUrl');
+            if (webhookUrl) {
+                webhookUrl.textContent = `${window.location.origin}/webhook`;
+            }
+        }
+        
+        // Copy to clipboard
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            copyToClipboardText(text);
+        }
+        
+        function copyToClipboardText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('📋 Copied to clipboard!', 'success');
+                setTimeout(() => {
+                    const msg = document.getElementById('message');
+                    msg.style.display = 'none';
+                }, 2000);
+            }).catch(() => {
+                showMessage('❌ Failed to copy', 'error');
+            });
+        }
+        
+        // Show message
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Make functions global for onclick handlers
+        window.copyToClipboard = copyToClipboard;
+        window.disconnectPage = disconnectPage;
+    </script>
+</body>
+</html>
