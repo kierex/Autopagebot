@@ -1,18 +1,27 @@
 {
-  "name": "nodejs",
-  "version": "1.0.0",
-  "description": "",
+  "name": "auto-pagebot",
+  "version": "2.0.0",
+  "description": "Multi-token Facebook Page Bot with Dashboard",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "facebook",
+    "messenger",
+    "bot",
+    "pagebot",
+    "automation"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.2",
     "cheerio": "^1.0.0",
     "express": "^4.21.2",
+    "express-session": "^1.18.0",
     "form-data": "^4.0.2",
     "fs-extra": "^11.3.0",
     "node-fetch": "^3.3.2"
