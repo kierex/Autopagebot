@@ -6,17 +6,18 @@ const { sendMessage } = require('../handles/sendMessage');
 const COMMANDS_PATH = path.join(__dirname, '../commands');    
 
 const CATEGORY_MAP = {    
-  ai: '🤖 | 𝗔𝗜',    
-  music: '🎧 | 𝗠𝗨𝗦𝗜𝗖',    
-  images: '🖼️ | 𝗜𝗠𝗔𝗚𝗘𝗦',    
-  search: '🔍 | 𝗦𝗘𝗔𝗥𝗖𝗛',
-  tools: '⚒️ | 𝗧𝗢𝗢𝗟𝗦',    
-  uploader: '📥 | 𝗨𝗣𝗟𝗢𝗔𝗗𝗘𝗥',    
-  others: '🗂️ | 𝗢𝗧𝗛𝗘𝗥𝗦',  
-  system: '⚙️ | 𝗕𝗢𝗧 𝗦𝗬𝗦𝗧𝗘𝗠'  
+  ai: '🤖 | 𝗔𝗶 𝗠𝗼𝗱𝗲𝗹𝘀',    
+  music: '🎧 | 𝗠𝘂𝘀𝗶𝗰',    
+  images: '🖼️ | 𝗜𝗺𝗮𝗴𝗲𝘀',    
+  search: '🔍 | 𝗦𝗲𝗮𝗿𝗰𝗵',
+  tools: '⚒️ | 𝗧𝗼𝗼𝗹𝘀',    
+  fun: '🥏 | Fun',
+  uploader: '📥 | 𝗨𝗽𝗹𝗼𝗮𝗱𝗲𝗿𝘀',    
+  others: '🗂️ | 𝗢𝘁𝗵𝗲𝗿𝘀',  
+  system: '⚙️ | 𝗕𝗼𝘁 𝗦𝘆𝘀𝘁𝗲𝗺'  
 };    
 
-const ALLOWED_CATEGORIES = ['ai', 'search', 'music', 'images', 'tools', 'system', 'uploader'];    
+const ALLOWED_CATEGORIES = ['ai', 'search', 'music', 'images', 'tools', 'fun', 'system', 'uploader'];    
 
 module.exports = {    
   name: ['help', 'commands', 'menu'],        
@@ -77,12 +78,12 @@ module.exports = {
         const response = 
 `📖 𝗖𝗼𝗺𝗺𝗮𝗻𝗱 𝗗𝗲𝘁𝗮𝗶𝗹𝘀
 
-• 𝗡𝗮𝗺𝗲: ${cmd.name}
-• 𝗗𝗲𝘀𝗰𝗿𝗶𝗽𝘁𝗶𝗼𝗻: ${cmd.description}
-• 𝗨𝘀𝗮𝗴𝗲: ${cmd.usage}
-• 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${cmd.version}
-• 𝗖𝗮𝘁𝗲𝗴𝗼𝗿𝘆: ${CATEGORY_MAP[cmd.category] || '🗂️ 𝗢𝗧𝗛𝗘𝗥𝗦'}
-• 𝗔𝘂𝘁𝗵𝗼𝗿: ${cmd.author}${cooldownInfo}`;    
+➥ 𝗡𝗮𝗺𝗲: ${cmd.name}
+➥ 𝗗𝗲𝘀𝗰𝗿𝗶𝗽𝘁𝗶𝗼𝗻: ${cmd.description}
+➥ 𝗨𝘀𝗮𝗴𝗲: ${cmd.usage}
+➥ 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${cmd.version}
+➥ 𝗖𝗮𝘁𝗲𝗴𝗼𝗿𝘆: ${CATEGORY_MAP[cmd.category] || '🗂️ | 𝗢𝘁𝗵𝗲𝗿𝘀'}
+➥ 𝗔𝘂𝘁𝗵𝗼𝗿: ${cmd.author}${cooldownInfo}`;    
 
         return sendMessage(senderId, { text: response }, pageAccessToken);    
       }    
@@ -92,11 +93,11 @@ module.exports = {
       for (const cat of Object.keys(CATEGORY_MAP)) grouped[cat] = [];    
 
       for (const cmd of commands) {    
-        grouped[cmd.category || 'others'].push(`→ ${cmd.name}`);    
+        grouped[cmd.category || 'others'].push(`➥ ${cmd.name}`);    
       }    
 
       const totalCount = commands.length;    
-      let message = `📖 𝗛𝗲𝗹𝗽 𝗠𝗲𝗻𝘂: [ ${totalCount} ]\n\n`;    
+      let message = `📖 𝗛𝗲𝗹𝗽 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀: [ ${totalCount} ]\n\n`;    
 
       for (const cat of Object.keys(CATEGORY_MAP)) {    
         if (grouped[cat].length > 0) {    
