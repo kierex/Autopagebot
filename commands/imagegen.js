@@ -6,7 +6,7 @@ const FormData = require('form-data');
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
-    name: ['imagine,'imgn'],
+    name: ['imagine'],
     usage: 'imagegen [prompt]',
     version: '1.0.0',
     author: 'Developer',
