@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { sendMessage } = require('./sendMessage');
+const tokenManager = require('./tokenManager');
 
 const commands = new Map();
 const imageCache = new Map();
@@ -49,19 +50,12 @@ setInterval(() => {
     }
 }, CACHE_TTL);
 
-// Cooldown functions (will be set from index.js)
-let checkCooldownGlobal = null;
-let setCooldownGlobal = null;
-
-// Function to set cooldown functions from index.js
-function setCooldownFunctions(checkFn, setFn) {
-    checkCooldownGlobal = checkFn;
-    setCooldownGlobal = setFn;
-}
-
 const handleMessage = async (event, pageAccessToken, pageId) => {
     const senderId = event?.sender?.id;
     if (!senderId) return;
+
+    // Increment message counter
+    await tokenManager.incrementMessages();
 
     const messageText = event?.message?.text?.trim();
     const attachments = event?.message?.attachments || [];
@@ -79,48 +73,27 @@ const handleMessage = async (event, pageAccessToken, pageId) => {
     if (!messageText) return;
 
     const isCommand = messageText.startsWith(prefix);
-    
-    if (!isCommand) return;
-    
-    const [commandName, ...args] = messageText.slice(prefix.length).split(' ');
+    const [commandName, ...args] = isCommand 
+        ? messageText.slice(prefix.length).split(' ')
+        : messageText.split(' ');
+
     const normalizedCommand = commandName.toLowerCase();
 
     try {
         const command = commands.get(normalizedCommand);
 
-        if (!command) {
-            return await sendMessage(senderId, { 
-                text: '❌ Unknown command. Type "help" for available commands.' 
-            }, pageAccessToken);
+        if (command) {
+            console.log(`📝 Executing command: ${normalizedCommand} for page ${pageId} from user ${senderId}`);
+            await command.execute(senderId, args, pageAccessToken, event, sendMessage, imageCache);
+        } else if (commands.has('ai')) {
+            await commands.get('ai').execute(senderId, [messageText], pageAccessToken, event, sendMessage, imageCache);
+        } else {
+            await sendMessage(senderId, { text: '🤖 Unknown command. Type "help" for available commands.' }, pageAccessToken);
         }
-
-        // Check cooldown if function is available
-        if (checkCooldownGlobal && command.cooldown > 0) {
-            const cooldownStatus = checkCooldownGlobal(normalizedCommand, senderId);
-            
-            if (cooldownStatus.onCooldown) {
-                return await sendMessage(senderId, { 
-                    text: `⏱️ Please wait ${cooldownStatus.remaining} seconds before using the "${normalizedCommand}" command again.` 
-                }, pageAccessToken);
-            }
-        }
-
-        console.log(`📝 Executing command: ${normalizedCommand} for page ${pageId} from user ${senderId}`);
-        
-        // Execute command
-        await command.execute(senderId, args, pageAccessToken, event, sendMessage, imageCache);
-        
-        // Set cooldown after successful execution
-        if (setCooldownGlobal && command.cooldown > 0) {
-            setCooldownGlobal(normalizedCommand, senderId, command.cooldown);
-        }
-        
     } catch (error) {
         console.error('Command execution error:', error.message);
-        await sendMessage(senderId, { 
-            text: `❌ Command execution failed: ${error.message}` 
-        }, pageAccessToken);
+        await sendMessage(senderId, { text: '❌ Command execution failed. Please try again later.' }, pageAccessToken);
     }
 };
 
-module.exports = { handleMessage, setCooldownFunctions };
+module.exports = { handleMessage };
