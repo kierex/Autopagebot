@@ -1,74 +1,129 @@
-const fs = require('fs');
-const path = require('path');
-const { sendMessage } = require('../handles/sendMessage');
+const fs = require('fs');    
+const path = require('path');    
+const axios = require('axios');    
+const { sendMessage } = require('../handles/sendMessage');    
 
-const commandCategories = {
-  "📖 | 𝙴𝚍𝚞𝚌𝚊𝚝𝚒𝚘𝚗": ['ai'],
-  "🖼 | 𝙸𝚖𝚊𝚐𝚎": ['imagegen', 'pinterest'],
-  "🎧 | 𝙼𝚞𝚜𝚒𝚌": ['lyrics'],
-  "👥 | 𝙾𝚝𝚑𝚎𝚛𝚜": ['help']
-};
+const COMMANDS_PATH = path.join(__dirname, '../commands');    
 
-module.exports = {
-  name: 'help',
-  description: 'Show available commands',
-  usage: 'help\nhelp [command name]',
-  author: 'Coffee',
+const CATEGORY_MAP = {    
+  ai: '🤖 | 𝗔𝗜',    
+  music: '🎧 | 𝗠𝗨𝗦𝗜𝗖',    
+  images: '🖼️ | 𝗜𝗠𝗔𝗚𝗘𝗦',    
+  search: '🔍 | 𝗦𝗘𝗔𝗥𝗖𝗛',
+  tools: '⚒️ | 𝗧𝗢𝗢𝗟𝗦',    
+  uploader: '📥 | 𝗨𝗣𝗟𝗢𝗔𝗗𝗘𝗥',    
+  others: '🗂️ | 𝗢𝗧𝗛𝗘𝗥𝗦',  
+  system: '⚙️ | 𝗕𝗢𝗧 𝗦𝗬𝗦𝗧𝗘𝗠'  
+};    
 
-  execute(senderId, args, pageAccessToken) {
-    const commandsDir = path.join(__dirname, '../commands');
-    const commandFiles = fs.readdirSync(commandsDir).filter(f => f.endsWith('.js'));
+const ALLOWED_CATEGORIES = ['ai', 'search', 'music', 'images', 'tools', 'system', 'uploader'];    
 
-    const loadCommand = file => {
-      try {
-        return require(path.join(commandsDir, file));
-      } catch {
-        return null;
-      }
-    };
+module.exports = {    
+  name: ['help', 'commands', 'menu'],    
+  description: 'Show available commands grouped by category or details for a command.',    
+  usage: 'help [command name]',    
+  author: 'AutoPageBot',    
+  version: '2.1.0',
+  category: 'tools',    
 
-    // If user asked for specific command
-    if (args.length) {
-      const name = args[0].toLowerCase();
-      const command = commandFiles.map(loadCommand).find(c => c?.name.toLowerCase() === name);
+  async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {    
+    try {    
+      const files = fs.readdirSync(COMMANDS_PATH).filter(file => file.endsWith('.js'));    
 
-      return sendMessage(
-        senderId,
-        {
-          text: command
-            ? `━━━━━━━━━━━━━━
-𝙲𝚘𝚖𝚖𝚊𝚗𝚍 𝙽𝚊𝚖𝚎: ${command.name}
-𝙳𝚎𝚜𝚌𝚛𝚒𝚙𝚝𝚒𝚘𝚗: ${command.description}
-𝚄𝚜𝚊𝚐𝚎: ${command.usage}
-━━━━━━━━━━━━━━`
-            : `Command "${name}" not found.`
-        },
-        pageAccessToken
-      );
-    }
+      const commands = files.map(file => {    
+        try {    
+          const cmd = require(path.join(COMMANDS_PATH, file));    
+          const category = ALLOWED_CATEGORIES.includes(cmd.category) ? cmd.category : 'others';    
 
-    // Grouped help message by categories
-    const categorizedMessage = Object.entries(commandCategories)
-      .map(([category, commands]) => {
-        const listed = commands
-          .filter(cmd => commandFiles.includes(`${cmd}.js`))
-          .map(cmd => `│ - ${cmd}`)
-          .join('\n');
-        return `╭─╼━━━━━━━━╾─╮\n│ ${category}\n${listed}\n╰─━━━━━━━━━╾─╯`;
-      })
-      .join('\n');
+          // Handle both string and array command names
+          let cmdName = cmd.name;
+          if (Array.isArray(cmd.name)) {
+            cmdName = cmd.name[0]; // Use first name as primary
+          }
 
-    sendMessage(
-      senderId,
-      {
-        text: `━━━━━━━━━━━━━━
-𝙰𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝙲𝚘𝚖𝚖𝚊𝚗𝚍𝚜:
-${categorizedMessage}
-Chat -help [name]   
-to see command details.
-━━━━━━━━━━━━━━`
-      },
-      pageAccessToken
-    );
-  }
+          return {    
+            name: cmdName,    
+            allNames: Array.isArray(cmd.name) ? cmd.name : [cmd.name],
+            description: cmd.description || 'No description.',    
+            usage: cmd.usage || 'Not specified.',    
+            author: cmd.author || 'Unknown',    
+            version: cmd.version || '1.0.0',
+            category    
+          };    
+        } catch(err) {    
+          console.error(`Error loading ${file}:`, err.message);
+          return null;    
+        }    
+      }).filter(Boolean);    
+
+      // If specific command is requested    
+      if (args.length > 0) {    
+        const input = args[0].toLowerCase();    
+        const cmd = commands.find(c => 
+          c.name.toLowerCase() === input || 
+          (c.allNames && c.allNames.some(name => name.toLowerCase() === input))
+        );    
+
+        if (!cmd) {    
+          return sendMessage(senderId, {    
+            text: `❌ Command "${input}" not found.\n\n📚 Type "help" to see all available commands.`    
+          }, pageAccessToken);    
+        }    
+
+        const response = 
+`📖 𝗖𝗼𝗺𝗺𝗮𝗻𝗱 𝗗𝗲𝘁𝗮𝗶𝗹𝘀
+
+• 𝗡𝗮𝗺𝗲: ${cmd.name}
+• 𝗗𝗲𝘀𝗰𝗿𝗶𝗽𝘁𝗶𝗼𝗻: ${cmd.description}
+• 𝗨𝘀𝗮𝗴𝗲: ${cmd.usage}
+• 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${cmd.version}
+• 𝗖𝗮𝘁𝗲𝗴𝗼𝗿𝘆: ${CATEGORY_MAP[cmd.category] || '🗂️ 𝗢𝗧𝗛𝗘𝗥𝗦'}
+• 𝗔𝘂𝘁𝗵𝗼𝗿: ${cmd.author}`;    
+
+        return sendMessage(senderId, { text: response }, pageAccessToken);    
+      }    
+
+      // Group all commands by category    
+      const grouped = {};    
+      for (const cat of Object.keys(CATEGORY_MAP)) grouped[cat] = [];    
+
+      for (const cmd of commands) {    
+        grouped[cmd.category || 'others'].push(`→ ${cmd.name}`);    
+      }    
+
+      const totalCount = commands.length;    
+      let message = `📖 𝗛𝗲𝗹𝗽 𝗠𝗲𝗻𝘂: [ ${totalCount} ]\n\n`;    
+
+      for (const cat of Object.keys(CATEGORY_MAP)) {    
+        if (grouped[cat].length > 0) {    
+          message += `${CATEGORY_MAP[cat]}:\n${grouped[cat].join('\n')}\n\n`;    
+        }    
+      }    
+
+      message += "🛠 𝗧𝗶𝗽: Use `help <command>` to view command info.\n\n";    
+
+      // Fetch random fact    
+      let factText = null;    
+      try {    
+        const factRes = await axios.get("https://api.popcat.xyz/v2/fact");    
+        if (factRes.data && factRes.data.message && factRes.data.message.fact) {    
+          factText = factRes.data.message.fact;    
+        }    
+      } catch (err) {    
+        factText = null;    
+      }    
+
+      if (factText) {    
+        message += `👍 𝗥𝗔𝗡𝗗𝗢𝗠 𝗙𝗔𝗖𝗧:\n\n[ ${factText} ]`;    
+      }    
+
+      await sendMessage(senderId, { text: message }, pageAccessToken);    
+
+    } catch (error) {    
+      console.error('Help command error:', error.message);    
+      await sendMessage(senderId, {    
+        text: `❌ Error while showing help menu:\n${error.message}`    
+      }, pageAccessToken);    
+    }    
+  }    
 };
