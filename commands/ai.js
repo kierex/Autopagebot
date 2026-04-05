@@ -32,47 +32,60 @@ function splitMessage(text) {
 }
 
 module.exports = {
-  name: 'ai',
-  description: 'Chat with Grok AI',
-  usage: 'grok [message]',
-  author: 'coffee',
+    name: ['ai','gpt'],
+    usage: 'ai [question]',
+    version: '1.0.0',
+    author: 'coffee',
+    category: 'ai',
+    cooldown: 5,
 
-  async execute(senderId, args, token) {
-    const message = args.join(' ') || 'Hello';
-    const header = '💬 | 𝙶𝚛𝚘𝚔 𝙰𝚒\n・────────────・\n';
-    const footer = '\n・──── >ᴗ< ─────・';
+    async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
+        const message = args.join(' ') || 'Hello';
+        
+        if (!args.length) {
+            return sendMessage(senderId, { 
+                text: '🤖 Please provide a question.\n\n📝 Usage: ai what is the meaning of life?\n\n✨ Example: ai tell me a joke' 
+            }, pageAccessToken);
+        }
 
-    try {
-      const response = await axios.get('https://rapido.zetsu.xyz/api/grok', {
-        params: { query: message }
-      });
+        const header = '💬 | 𝗖𝗵𝗮𝘁𝗚𝗣𝗧 𝗔𝗜\n・────────────・\n';
+        const footer = '\n・──── >ᴗ< ─────・';
 
-      if (!response.data || !response.data.status) {
-        throw new Error('API error');
-      }
+        try {
+            const response = await axios.get('https://yin-api.vercel.app/ai/chatgptfree', {
+                params: { 
+                    prompt: message,
+                    model: 'chatgpt4'
+                }
+            });
 
-      let aiResponse = response.data.response;
+            if (!response.data || !response.data.answer) {
+                throw new Error('API error');
+            }
 
-      aiResponse = aiResponse.trim();
-      aiResponse = makeBold(aiResponse);
+            let aiResponse = response.data.answer;
+            
+            aiResponse = aiResponse.trim();
+            aiResponse = makeBold(aiResponse);
 
-      const chunks = splitMessage(aiResponse);
+            const chunks = splitMessage(aiResponse);
 
-      for (let i = 0; i < chunks.length; i++) {
-        const isFirst = i === 0;
-        const isLast = i === chunks.length - 1;
+            for (let i = 0; i < chunks.length; i++) {
+                const isFirst = i === 0;
+                const isLast = i === chunks.length - 1;
 
-        let fullMessage = chunks[i];
-        if (isFirst) fullMessage = header + fullMessage;
-        if (isLast) fullMessage = fullMessage + footer;
+                let fullMessage = chunks[i];
+                if (isFirst) fullMessage = header + fullMessage;
+                if (isLast) fullMessage = fullMessage + footer;
 
-        await sendMessage(senderId, { text: fullMessage }, token);
-      }
+                await sendMessage(senderId, { text: fullMessage }, pageAccessToken);
+            }
 
-    } catch (error) {
-      await sendMessage(senderId, {
-        text: header + '❌ Something went wrong. Please try again.' + footer
-      }, token);
+        } catch (error) {
+            console.error('AI Error:', error.message);
+            await sendMessage(senderId, {
+                text: header + '❌ Something went wrong. Please try again.\n\n💡 Tip: Try asking something else!' + footer
+            }, pageAccessToken);
+        }
     }
-  }
 };
