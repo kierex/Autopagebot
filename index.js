@@ -10,6 +10,9 @@ const app = express();
 const VERIFY_TOKEN = 'bot';
 const PORT = process.env.PORT || 3000;
 
+// Cooldown storage (in-memory)
+const cooldowns = new Map();
+
 // Security middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -34,6 +37,115 @@ app.use((req, res, next) => {
 // Serve static files
 app.use(express.static('public'));
 
+// Helper function to get all commands with alias support and cooldown
+function getAllCommands() {
+    const commandsPath = path.join(__dirname, 'commands');
+    if (!fs.existsSync(commandsPath)) return [];
+    
+    const files = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    const commands = [];
+    
+    for (const file of files) {
+        try {
+            const cmd = require(path.join(commandsPath, file));
+            
+            // Handle both string and array for command names (aliases)
+            let cmdNames = [];
+            let primaryName = '';
+            
+            if (Array.isArray(cmd.name)) {
+                cmdNames = cmd.name;
+                primaryName = cmd.name[0];
+            } else if (typeof cmd.name === 'string') {
+                cmdNames = [cmd.name];
+                primaryName = cmd.name;
+            } else if (cmd.name) {
+                cmdNames = [String(cmd.name)];
+                primaryName = String(cmd.name);
+            }
+            
+            // Get cooldown value (0-20 seconds, default 0)
+            let cooldownValue = parseInt(cmd.cooldown) || 0;
+            if (cooldownValue < 0) cooldownValue = 0;
+            if (cooldownValue > 20) cooldownValue = 20;
+            
+            commands.push({
+                name: primaryName,
+                aliases: cmdNames.filter(n => n !== primaryName),
+                allNames: cmdNames,
+                description: cmd.description || 'No description.',
+                usage: cmd.usage || 'Not specified.',
+                version: cmd.version || '1.0.0',
+                author: cmd.author || 'AutoPageBot',
+                category: cmd.category || 'others',
+                cooldown: cooldownValue,
+                hidden: cmd.hidden || false,
+                fileName: file
+            });
+        } catch (err) {
+            console.error(`Error loading command ${file}:`, err.message);
+        }
+    }
+    
+    return commands;
+}
+
+// Helper function to find command by name or alias
+function findCommand(commandName) {
+    const commands = getAllCommands();
+    const searchName = commandName.toLowerCase();
+    
+    return commands.find(cmd => 
+        cmd.name.toLowerCase() === searchName ||
+        cmd.aliases.some(alias => alias.toLowerCase() === searchName)
+    );
+}
+
+// Helper function to check cooldown
+function checkCooldown(commandName, senderId) {
+    const key = `${commandName}_${senderId}`;
+    const cooldownData = cooldowns.get(key);
+    
+    if (!cooldownData) return { onCooldown: false, remaining: 0 };
+    
+    const now = Date.now();
+    const remaining = Math.ceil((cooldownData.expires - now) / 1000);
+    
+    if (remaining <= 0) {
+        cooldowns.delete(key);
+        return { onCooldown: false, remaining: 0 };
+    }
+    
+    return { onCooldown: true, remaining };
+}
+
+// Helper function to set cooldown
+function setCooldown(commandName, senderId, seconds) {
+    if (seconds <= 0) return;
+    if (seconds > 20) seconds = 20; // Max 20 seconds
+    
+    const key = `${commandName}_${senderId}`;
+    cooldowns.set(key, {
+        expires: Date.now() + (seconds * 1000),
+        command: commandName,
+        userId: senderId
+    });
+    
+    // Auto cleanup after cooldown expires
+    setTimeout(() => {
+        if (cooldowns.get(key)?.expires <= Date.now()) {
+            cooldowns.delete(key);
+        }
+    }, seconds * 1000);
+}
+
+// Helper function to get command count
+function getCommandCount() {
+    const commandsPath = path.join(__dirname, 'commands');
+    if (!fs.existsSync(commandsPath)) return 0;
+    return fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).length;
+}
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ 
@@ -42,7 +154,9 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         sessions: tokenManager.getSessionCount(),
         version: '2.1',
-        verifyToken: VERIFY_TOKEN
+        verifyToken: VERIFY_TOKEN,
+        commandsLoaded: getCommandCount(),
+        activeCooldowns: cooldowns.size
     });
 });
 
@@ -60,7 +174,7 @@ app.get('/api/sessions', async (req, res) => {
             messengerLink: s.messengerLink,
             uptime: s.connectedAt ? Math.floor((Date.now() - new Date(s.connectedAt).getTime()) / 1000) : 0
         }));
-        
+
         res.json({ 
             sessions: sessionsWithDetails, 
             count: sessionsWithDetails.length,
@@ -73,15 +187,96 @@ app.get('/api/sessions', async (req, res) => {
     }
 });
 
+// API: Get all commands with aliases and cooldowns
+app.get('/api/commands', (req, res) => {
+    try {
+        const commands = getAllCommands();
+        res.json({ 
+            commands: commands,
+            count: commands.length,
+            categories: [...new Set(commands.map(c => c.category))],
+            cooldownRange: { min: 0, max: 20, description: 'Cooldown in seconds (0 = no cooldown, max 20)' }
+        });
+    } catch (error) {
+        console.error('Error fetching commands:', error);
+        res.status(500).json({ error: 'Failed to fetch commands' });
+    }
+});
+
+// API: Get command by name or alias
+app.get('/api/commands/:commandName', (req, res) => {
+    const { commandName } = req.params;
+    const command = findCommand(commandName);
+    
+    if (!command) {
+        return res.status(404).json({ error: 'Command not found' });
+    }
+    
+    res.json(command);
+});
+
+// API: Get commands by category
+app.get('/api/category/:category', (req, res) => {
+    const { category } = req.params;
+    const commands = getAllCommands();
+    
+    const filteredCommands = commands.filter(c => 
+        c.category.toLowerCase() === category.toLowerCase()
+    );
+    
+    res.json({ 
+        commands: filteredCommands,
+        count: filteredCommands.length,
+        category: category
+    });
+});
+
+// API: Get command aliases info
+app.get('/api/aliases/:commandName', (req, res) => {
+    const { commandName } = req.params;
+    const command = findCommand(commandName);
+    
+    if (!command) {
+        return res.status(404).json({ error: 'Command not found' });
+    }
+    
+    res.json({
+        name: command.name,
+        aliases: command.aliases,
+        allNames: command.allNames,
+        count: command.aliases.length
+    });
+});
+
+// API: Get cooldown status for a command
+app.get('/api/cooldown/:commandName/:userId', (req, res) => {
+    const { commandName, userId } = req.params;
+    const command = findCommand(commandName);
+    
+    if (!command) {
+        return res.status(404).json({ error: 'Command not found' });
+    }
+    
+    const cooldownStatus = checkCooldown(command.name, userId);
+    res.json({
+        command: command.name,
+        userId: userId,
+        cooldown: command.cooldown,
+        onCooldown: cooldownStatus.onCooldown,
+        remainingSeconds: cooldownStatus.remaining,
+        message: cooldownStatus.onCooldown ? `Please wait ${cooldownStatus.remaining} seconds before using this command again.` : 'Ready to use'
+    });
+});
+
 // API: Get single page info
 app.get('/api/page/:pageId', async (req, res) => {
     const { pageId } = req.params;
     const tokenData = await tokenManager.getToken(pageId);
-    
+
     if (!tokenData) {
         return res.status(404).json({ error: 'Page not found' });
     }
-    
+
     res.json({
         id: pageId,
         name: tokenData.name,
@@ -95,7 +290,7 @@ app.get('/api/page/:pageId', async (req, res) => {
 // API: Add new page token
 app.post('/api/connect', async (req, res) => {
     const { pageToken, pageName, userName } = req.body;
-    
+
     if (!pageToken) {
         return res.status(400).json({ error: 'Page token is required' });
     }
@@ -104,7 +299,7 @@ app.post('/api/connect', async (req, res) => {
         // Verify token and get page info
         const response = await fetch(`https://graph.facebook.com/v23.0/me?access_token=${pageToken}`);
         const data = await response.json();
-        
+
         if (data.error) {
             return res.status(400).json({ error: 'Invalid token: ' + data.error.message });
         }
@@ -112,13 +307,13 @@ app.post('/api/connect', async (req, res) => {
         const pageId = data.id;
         const name = pageName || data.name || 'Unnamed Page';
         const username = data.username || pageId;
-        
+
         // Check if page already exists
         const existing = await tokenManager.getToken(pageId);
         if (existing) {
             return res.status(400).json({ error: 'Page already connected!' });
         }
-        
+
         // Store token with owner info
         await tokenManager.addToken(pageId, {
             token: pageToken,
@@ -135,9 +330,9 @@ app.post('/api/connect', async (req, res) => {
         // Setup webhook for this page
         const webhookUrl = `${req.protocol}://${req.get('host')}/webhook`;
         await setupPageWebhook(pageId, pageToken, webhookUrl);
-        
+
         console.log(`✅ Page connected: ${name} (${pageId}) by ${userName || 'Anonymous'}`);
-        
+
         res.json({ 
             success: true, 
             page: { id: pageId, name, username },
@@ -157,13 +352,13 @@ const setupPageWebhook = async (pageId, pageToken, webhookUrl) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (subscribeRes.ok) {
             console.log(`✅ Webhook configured for page ${pageId}`);
         } else {
             console.log(`⚠️ Webhook subscription issue for page ${pageId}`);
         }
-        
+
         // Set webhook fields (optional but recommended)
         const fieldsRes = await fetch(`https://graph.facebook.com/v23.0/me/messenger_profile?access_token=${pageToken}`, {
             method: 'POST',
@@ -176,7 +371,7 @@ const setupPageWebhook = async (pageId, pageToken, webhookUrl) => {
                 fields: ['messages', 'messaging_postbacks', 'messaging_optins']
             })
         }).catch(() => null);
-        
+
     } catch (error) {
         console.error(`Failed to setup webhook for ${pageId}:`, error.message);
     }
@@ -185,9 +380,9 @@ const setupPageWebhook = async (pageId, pageToken, webhookUrl) => {
 // Webhook verification
 app.get('/webhook', (req, res) => {
     const { 'hub.mode': mode, 'hub.verify_token': token, 'hub.challenge': challenge } = req.query;
-    
+
     console.log(`Webhook verification - Mode: ${mode}, Token: ${token}`);
-    
+
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
         console.log('✅ Webhook verified successfully');
         res.status(200).send(challenge);
@@ -202,21 +397,21 @@ app.post('/webhook', async (req, res) => {
     if (req.body.object !== 'page') {
         return res.sendStatus(404);
     }
-    
+
     console.log(`📨 Webhook received: ${req.body.entry?.length || 0} entries`);
-    
+
     for (const entry of req.body.entry || []) {
         const pageId = entry.id;
         const tokenData = await tokenManager.getToken(pageId);
-        
+
         if (!tokenData) {
             console.log(`❌ No token found for page ${pageId}`);
             continue;
         }
-        
+
         // Update last active
         await tokenManager.updateLastActive(pageId);
-        
+
         // Process each messaging event
         for (const event of entry.messaging || []) {
             try {
@@ -230,7 +425,7 @@ app.post('/webhook', async (req, res) => {
             }
         }
     }
-    
+
     res.status(200).send('EVENT_RECEIVED');
 });
 
@@ -249,14 +444,18 @@ app.get('/api/tutorial', (req, res) => {
 app.get('/api/stats', async (req, res) => {
     const sessions = await tokenManager.getAllSessions();
     const totalMessages = await tokenManager.getTotalMessages() || 0;
-    
+    const commandsCount = getCommandCount();
+
     res.json({
         activeSessions: sessions.length,
         totalPages: sessions.length,
         serverUptime: process.uptime(),
         startTime: new Date(Date.now() - process.uptime() * 1000).toISOString(),
         version: '2.1',
-        totalMessages: totalMessages
+        totalMessages: totalMessages,
+        totalCommands: commandsCount,
+        verifyToken: VERIFY_TOKEN,
+        activeCooldowns: cooldowns.size
     });
 });
 
@@ -275,21 +474,53 @@ app.use((req, res) => {
 const start = async () => {
     try {
         await tokenManager.loadTokens();
-        
+
         // Create necessary directories if not exists
-        if (!fs.existsSync(path.join(__dirname, 'public'))) {
-            fs.mkdirSync(path.join(__dirname, 'public'), { recursive: true });
+        const dirs = ['public', 'commands', 'temp'];
+        for (const dir of dirs) {
+            if (!fs.existsSync(path.join(__dirname, dir))) {
+                fs.mkdirSync(path.join(__dirname, dir), { recursive: true });
+                console.log(`📁 Created ${dir} directory`);
+            }
         }
+
+        // Create sample command with aliases and cooldown if no commands exist
+        const commandsPath = path.join(__dirname, 'commands');
+        const existingCommands = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
         
-        if (!fs.existsSync(path.join(__dirname, 'commands'))) {
-            fs.mkdirSync(path.join(__dirname, 'commands'), { recursive: true });
+        if (existingCommands.length === 0) {
+            const sampleCommand = `// Sample command with aliases and cooldown
+const { sendMessage } = require('../handles/sendMessage');
+
+module.exports = {
+    name: ['ping', 'pong', 'alive'],
+    description: 'Check if bot is alive and responding',
+    usage: 'ping',
+    version: '1.0.0',
+    author: 'AutoPageBot',
+    category: 'system',
+    cooldown: 3, // 3 seconds cooldown (0-20 range)
+
+    async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
+        await sendMessage(senderId, { 
+            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 1.0.0\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds\\n\\n💡 Tip: You can also use: ping, pong, or alive' 
+        }, pageAccessToken);
+    }
+};`;
+            
+            fs.writeFileSync(path.join(commandsPath, 'ping.js'), sampleCommand);
+            console.log('📝 Created sample command with aliases and cooldown: ping.js');
+            console.log('   Aliases: ping, pong, alive');
+            console.log('   Cooldown: 3 seconds');
         }
-        
+
         app.listen(PORT, () => {
             console.log(`\n🤖 AutoPageBot v2.1 Server Running`);
             console.log(`📡 URL: http://localhost:${PORT}`);
             console.log(`🔐 Verify Token: ${VERIFY_TOKEN}`);
             console.log(`📊 Active Sessions: ${tokenManager.getSessionCount()}`);
+            console.log(`📚 Commands Loaded: ${getCommandCount()}`);
+            console.log(`⏱️ Cooldown Range: 0-20 seconds`);
             console.log(`💡 Dashboard: http://localhost:${PORT}`);
             console.log(`📚 Tutorial: http://localhost:${PORT}#tutorial\n`);
         });
