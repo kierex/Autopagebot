@@ -19,8 +19,7 @@ const CATEGORY_MAP = {
 const ALLOWED_CATEGORIES = ['ai', 'search', 'music', 'images', 'tools', 'system', 'uploader'];    
 
 module.exports = {    
-  name: ['help', 'commands', 'menu'],    
-  description: 'Show available commands grouped by category or details for a command.',    
+  name: ['help', 'commands', 'menu'],        
   usage: 'help [command name]',    
   author: 'AutoPageBot',    
   version: '2.1.0',
@@ -74,7 +73,7 @@ module.exports = {
 
         // Show cooldown info if command has cooldown
         const cooldownInfo = cmd.cooldown > 0 ? `\n• 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: ${cmd.cooldown} seconds` : '';
-        
+
         const response = 
 `📖 𝗖𝗼𝗺𝗺𝗮𝗻𝗱 𝗗𝗲𝘁𝗮𝗶𝗹𝘀
 
