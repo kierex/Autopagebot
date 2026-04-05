@@ -24,7 +24,8 @@ module.exports = {
   usage: 'help [command name]',    
   author: 'AutoPageBot',    
   version: '2.1.0',
-  category: 'tools',    
+  category: 'tools',
+  cooldown: 3, // 3 seconds cooldown (0-20 range)
 
   async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {    
     try {    
@@ -48,7 +49,8 @@ module.exports = {
             usage: cmd.usage || 'Not specified.',    
             author: cmd.author || 'Unknown',    
             version: cmd.version || '1.0.0',
-            category    
+            category,
+            cooldown: cmd.cooldown || 0
           };    
         } catch(err) {    
           console.error(`Error loading ${file}:`, err.message);
@@ -70,6 +72,9 @@ module.exports = {
           }, pageAccessToken);    
         }    
 
+        // Show cooldown info if command has cooldown
+        const cooldownInfo = cmd.cooldown > 0 ? `\n• 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: ${cmd.cooldown} seconds` : '';
+        
         const response = 
 `📖 𝗖𝗼𝗺𝗺𝗮𝗻𝗱 𝗗𝗲𝘁𝗮𝗶𝗹𝘀
 
@@ -78,7 +83,7 @@ module.exports = {
 • 𝗨𝘀𝗮𝗴𝗲: ${cmd.usage}
 • 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${cmd.version}
 • 𝗖𝗮𝘁𝗲𝗴𝗼𝗿𝘆: ${CATEGORY_MAP[cmd.category] || '🗂️ 𝗢𝗧𝗛𝗘𝗥𝗦'}
-• 𝗔𝘂𝘁𝗵𝗼𝗿: ${cmd.author}`;    
+• 𝗔𝘂𝘁𝗵𝗼𝗿: ${cmd.author}${cooldownInfo}`;    
 
         return sendMessage(senderId, { text: response }, pageAccessToken);    
       }    
@@ -101,6 +106,7 @@ module.exports = {
       }    
 
       message += "🛠 𝗧𝗶𝗽: Use `help <command>` to view command info.\n\n";    
+      message += "⏱️ 𝗡𝗼𝘁𝗲: Some commands have cooldowns (3-20 seconds) to prevent spam.\n\n";
 
       // Fetch random fact    
       let factText = null;    
