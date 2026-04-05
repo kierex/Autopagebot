@@ -11,7 +11,7 @@ const CATEGORY_MAP = {
   images: '🖼️ | 𝗜𝗺𝗮𝗴𝗲𝘀',    
   search: '🔍 | 𝗦𝗲𝗮𝗿𝗰𝗵',
   tools: '⚒️ | 𝗧𝗼𝗼𝗹𝘀',    
-  fun: '🥏 | Fun',
+  fun: '🥏 | 𝗙𝘂𝗻',
   uploader: '📥 | 𝗨𝗽𝗹𝗼𝗮𝗱𝗲𝗿𝘀',    
   others: '🗂️ | 𝗢𝘁𝗵𝗲𝗿𝘀',  
   system: '⚙️ | 𝗕𝗼𝘁 𝗦𝘆𝘀𝘁𝗲𝗺'  
