@@ -146,13 +146,6 @@ function getCommandCount() {
     return fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).length;
 }
 
-// Expose cooldown functions for handleMessage
-global.cooldownFunctions = {
-    checkCooldown,
-    setCooldown,
-    findCommand
-};
-
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ 
@@ -491,31 +484,34 @@ const start = async () => {
             }
         }
 
-        // Create sample command with cooldown if no commands exist
+        // Create sample command with aliases and cooldown if no commands exist
         const commandsPath = path.join(__dirname, 'commands');
         const existingCommands = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
         
         if (existingCommands.length === 0) {
-            const sampleCommand = `// Sample command with cooldown
+            const sampleCommand = `// Sample command with aliases and cooldown
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
     name: ['ping', 'pong', 'alive'],
+    description: 'Check if bot is alive and responding',
     usage: 'ping',
     version: '1.0.0',
     author: 'AutoPageBot',
     category: 'system',
-    cooldown: 3,
+    cooldown: 3, // 3 seconds cooldown (0-20 range)
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
         await sendMessage(senderId, { 
-            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 1.0.0\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds' 
+            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 1.0.0\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds\\n\\n💡 Tip: You can also use: ping, pong, or alive' 
         }, pageAccessToken);
     }
 };`;
             
             fs.writeFileSync(path.join(commandsPath, 'ping.js'), sampleCommand);
-            console.log('📝 Created sample command with cooldown: ping.js');
+            console.log('📝 Created sample command with aliases and cooldown: ping.js');
+            console.log('   Aliases: ping, pong, alive');
+            console.log('   Cooldown: 3 seconds');
         }
 
         app.listen(PORT, () => {
