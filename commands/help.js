@@ -106,7 +106,6 @@ module.exports = {
       }    
 
       message += "🛠 𝗧𝗶𝗽: Use `help <command>` to view command info.\n\n";    
-      message += "⏱️ 𝗡𝗼𝘁𝗲: Some commands have cooldowns (3-20 seconds) to prevent spam.\n\n";
 
       // Fetch random fact    
       let factText = null;    
