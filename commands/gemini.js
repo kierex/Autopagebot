@@ -6,7 +6,7 @@ const GEMINI_API_URL = 'https://kryptonite-api-library.onrender.com/api/gemini-v
 
 module.exports = {
   name: "gemini",
-  description: "Interact with Gemini AI for text or image input (Krypton API)",
+  usage: "ask or reply image",
   author: "AutoPageBot",
   version: "2.1.0",
   category: "ai",
@@ -19,7 +19,7 @@ module.exports = {
     if (!userPrompt && !imageUrl) {
       return sendMessage(
         senderId,
-        { text: `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\nℹ️ Please provide a question or image.\n\n📝 Usage:\n• Text: gemini what is AI?\n• Image: gemini describe this [with image]\n• Image URL: gemini analyze https://example.com/photo.jpg` },
+        { text: `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\nℹ️ Please provide a question or image.\n\n📝 Usage:\n• Text: gemini what is AI?\n• Image: gemini describe this [reply image]` },
         pageAccessToken
       );
     }
@@ -101,7 +101,7 @@ module.exports = {
       }
 
       // Format and send response
-      const message = `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\n${aiResponse}\n━━━━━━━━━━━━━━━━━━\n💡 Powered by Krypton Gemini API`;
+      const message = `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━\n${aiResponse}\n━━━━━━━━━━━━━━━━━`;
       
       await sendConcatenatedMessage(senderId, message, pageAccessToken);
 
