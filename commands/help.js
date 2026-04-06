@@ -7,7 +7,7 @@ const COMMANDS_PATH = path.join(__dirname, '../commands');
 
 const CATEGORY_MAP = {    
   ai: '🤖 | 𝗔𝗶 𝗠𝗼𝗱𝗲𝗹𝘀',    
-  canvas: 🎨 | 𝗖𝗮𝗻𝘃𝗮𝘀',
+  canvas: '🎨 | 𝗖𝗮𝗻𝘃𝗮𝘀',
   music: '🎧 | 𝗠𝘂𝘀𝗶𝗰',    
   images: '🖼️ | 𝗜𝗺𝗮𝗴𝗲𝘀',    
   search: '🔍 | 𝗦𝗲𝗮𝗿𝗰𝗵',
