@@ -1,70 +1,50 @@
-const axios = require('axios');
-const { sendMessage } = require('../handles/sendMessage');
-
-const API_ENDPOINT = "https://api-library-kohi.onrender.com/api/removebg";
+const axios = require("axios");
+const { sendMessage } = require("../handles/sendMessage");
 
 module.exports = {
-  name: ['removebg', 'rbg', 'nobg', 'erasebg'],
-  usage: 'Send an image and type "removebg"',
+  name: ['removebg'],
+  usage: 'Send an image and type "removebg" to remove background',
   version: '1.0.0',
   author: 'AutoPageBot',
   category: 'images',
-  cooldown: 5,
+  cooldown: 0,
 
   async execute(senderId, args, pageAccessToken, imageUrl) {
     if (!imageUrl) {
       return sendMessage(senderId, {
-        text: `❌ Please send an image first, then type "removebg" to remove its background.`
+        text: `❌ 𝗣𝗹𝗲𝗮𝘀𝗲 𝘀𝗲𝗻𝗱 𝗮𝗻 𝗶𝗺𝗮𝗴𝗲 𝗳𝗶𝗿𝘀𝘁, 𝘁𝗵𝗲𝗻 𝘁𝘆𝗽𝗲 "𝗿𝗲𝗺𝗼𝘃𝗲𝗯𝗴" 𝘁𝗼 𝗿𝗲𝗺𝗼𝘃𝗲 𝗶𝘁𝘀 𝗯𝗮𝗰𝗸𝗴𝗿𝗼𝘂𝗻𝗱.`
       }, pageAccessToken);
     }
 
-    await sendMessage(senderId, { 
-      text: '🔄 Removing background, please wait...' 
+    await sendMessage(senderId, {
+      text: "⌛ 𝗥𝗲𝗺𝗼𝘃𝗶𝗻𝗴 𝗯𝗮𝗰𝗸𝗴𝗿𝗼𝘂𝗻𝗱, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..."
     }, pageAccessToken);
 
     try {
-      const encodedUrl = encodeURIComponent(imageUrl);
-      const fullApiUrl = `${API_ENDPOINT}?url=${encodedUrl}`;
-      
-      const response = await axios.get(fullApiUrl, { timeout: 30000 });
+      // Updated API endpoint
+      const apiUrl = `https://api-library-kohi.onrender.com/api/removebg?url=${encodeURIComponent(imageUrl)}`;
+      const response = await axios.get(apiUrl);
 
-      if (!response.data.status || !response.data.data || !response.data.data.url) {
-        throw new Error("Invalid API response structure");
-      }
-
-      const processedImageUrl = response.data.data.url;
-
-      await sendMessage(senderId, {
-        text: '✅ Background removed successfully!',
-        attachment: {
-          type: 'image',
-          payload: {
-            url: processedImageUrl
+      // Check the new response structure
+      if (response.data?.status && response.data?.data?.url) {
+        await sendMessage(senderId, {
+          attachment: {
+            type: "image",
+            payload: {
+              url: response.data.data.url
+            }
           }
-        }
-      }, pageAccessToken);
-
-    } catch (error) {
-      console.error("RemoveBG Command Error:", error);
-      
-      let errorMessage = "An error occurred while removing background.";
-      
-      if (error.response) {
-        if (error.response.status === 404) {
-          errorMessage = "API endpoint not found (404).";
-        } else if (error.response.status === 400) {
-          errorMessage = "Invalid image URL or bad request.";
-        } else {
-          errorMessage = `HTTP Error: ${error.response.status}`;
-        }
-      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        errorMessage = "Request timed out. The service might be busy. Please try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
+        }, pageAccessToken);
+      } else {
+        await sendMessage(senderId, {
+          text: `❌ Failed to remove background. Reason: ${response.data?.message || 'Unknown error'}`
+        }, pageAccessToken);
       }
-      
+
+    } catch (err) {
+      console.error("❌ Error removing background:", err);
       await sendMessage(senderId, {
-        text: `❌ ${errorMessage}`
+        text: `❌ An error occurred while removing the background. Please try again later.`
       }, pageAccessToken);
     }
   }
