@@ -6,7 +6,7 @@ module.exports = {
   usage: 'Send an image and type "imgur" to upload to Imgur',
   version: '1.0.0',
   author: 'AutoPageBot',
-  category: 'tools',
+  category: 'uploader',
   cooldown: 0,
 
   async execute(senderId, args, pageAccessToken, imageUrl) {
