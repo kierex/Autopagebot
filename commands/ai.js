@@ -1,5 +1,7 @@
 const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
+const fs = require('fs');
+const path = require('path');
 
 // API Keys (Primary + Backups)
 const API_KEYS = [
@@ -9,6 +11,82 @@ const API_KEYS = [
   'AIzaSyDuOaOrtTvx9W5Jw6eQOIJb613uEP-vgWQ', // Backup 3
   'AIzaSyB_UMcCeW7_cnkigbePnh7GVWWEIrziaFQ'  // Backup 4
 ];
+
+// Conversation storage file
+const CONVERSATIONS_FILE = path.join(__dirname, '../conversations.json');
+let conversations = new Map();
+
+// Load conversations from file
+function loadConversations() {
+    try {
+        if (fs.existsSync(CONVERSATIONS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(CONVERSATIONS_FILE, 'utf8'));
+            conversations = new Map(Object.entries(data));
+            console.log(`📚 Loaded ${conversations.size} conversations`);
+        }
+    } catch (error) {
+        console.error('Error loading conversations:', error.message);
+    }
+}
+
+// Save conversations to file
+function saveConversations() {
+    try {
+        const data = Object.fromEntries(conversations);
+        fs.writeFileSync(CONVERSATIONS_FILE, JSON.stringify(data, null, 2));
+    } catch (error) {
+        console.error('Error saving conversations:', error.message);
+    }
+}
+
+// Get conversation history for user
+function getConversation(userId) {
+    if (!conversations.has(userId)) {
+        conversations.set(userId, {
+            messages: [],
+            lastActive: Date.now()
+        });
+    }
+    return conversations.get(userId);
+}
+
+// Add message to conversation
+function addToConversation(userId, role, content) {
+    const conv = getConversation(userId);
+    conv.messages.push({
+        role: role,
+        content: content,
+        timestamp: Date.now()
+    });
+    
+    // Keep only last 20 messages for context
+    if (conv.messages.length > 20) {
+        conv.messages = conv.messages.slice(-20);
+    }
+    
+    conv.lastActive = Date.now();
+    conversations.set(userId, conv);
+    saveConversations();
+}
+
+// Clear conversation for user
+function clearConversation(userId) {
+    conversations.delete(userId);
+    saveConversations();
+}
+
+// Build conversation context
+function buildContext(userId, currentMessage) {
+    const conv = getConversation(userId);
+    const recentMessages = conv.messages.slice(-10); // Last 10 messages
+    
+    let context = '';
+    for (const msg of recentMessages) {
+        context += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+    }
+    
+    return context;
+}
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -41,24 +119,81 @@ function splitMessage(text) {
 }
 
 module.exports = {
-    name: ['ai'],
-    usage: 'ai [question]',
+    name: ['ai', 'chat', 'gpt', 'ask', 'gemini'],
+    usage: 'ai [question] or ai reset or ai clear',
     version: '1.0.0',
     author: 'AutoPagebot',
     category: 'ai',
     cooldown: 5,
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
+        // Load conversations on first run
+        if (conversations.size === 0) {
+            loadConversations();
+        }
+        
         const message = args.join(' ');
 
         if (!args.length) {
+            const conv = getConversation(senderId);
+            const messageCount = conv.messages.length;
+            
             return sendMessage(senderId, { 
-                text: '🤖 Please provide a question.\n\n📝 Usage: ai what is the meaning of life?\n\n✨ Example: ai tell me a joke' 
+                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜
+
+📝 Usage: ai [your question]
+
+✨ Examples:
+• ai Hello! My name is John
+• ai What's my name? (remembers context)
+• ai Tell me a joke
+• ai Explain quantum physics
+
+🔄 Commands:
+• ai reset - Clear conversation history
+• ai stats - Show conversation stats
+
+📊 Current session: ${messageCount} messages
+
+💡 The AI remembers your conversation!`
+            }, pageAccessToken);
+        }
+
+        // Handle reset command
+        if (message.toLowerCase() === 'reset' || message.toLowerCase() === 'clear') {
+            clearConversation(senderId);
+            return sendMessage(senderId, {
+                text: '🧹 Conversation history has been cleared!\n\n💬 You can now start a fresh conversation.'
+            }, pageAccessToken);
+        }
+
+        // Handle stats command
+        if (message.toLowerCase() === 'stats') {
+            const conv = getConversation(senderId);
+            return sendMessage(senderId, {
+                text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀
+
+• Total messages: ${conv.messages.length}
+• Last active: ${new Date(conv.lastActive).toLocaleString()}
+• Session active: Yes
+
+💡 Use "ai reset" to clear history`
             }, pageAccessToken);
         }
 
         const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n';
         const footer = '\n・────────────・';
+
+        // Send typing indicator
+        await sendMessage(senderId, { text: '🤔 Thinking...' }, pageAccessToken);
+
+        // Build context from conversation history
+        const context = buildContext(senderId, message);
+        let prompt = message;
+        
+        if (context) {
+            prompt = `Previous conversation:\n${context}\nUser: ${message}\nAssistant:`;
+        }
 
         let aiResponse = null;
         let lastError = null;
@@ -68,11 +203,12 @@ module.exports = {
             try {
                 const response = await axios.get('https://kryptonite-api-library.onrender.com/api/gemini-vision', {
                     params: { 
-                        prompt: message,
+                        prompt: prompt,
                         uid: senderId,
                         imgUrl: '',
                         apikey: API_KEYS[i]
-                    }
+                    },
+                    timeout: 30000
                 });
 
                 if (response.data && response.data.status === true && response.data.response) {
@@ -85,7 +221,6 @@ module.exports = {
             } catch (error) {
                 lastError = error;
                 console.log(`❌ API key ${i + 1} failed:`, error.message);
-                // Continue to next key
             }
         }
 
@@ -96,6 +231,10 @@ module.exports = {
             }, pageAccessToken);
             return;
         }
+
+        // Save to conversation history
+        addToConversation(senderId, 'user', message);
+        addToConversation(senderId, 'assistant', aiResponse);
 
         aiResponse = aiResponse.trim();
         aiResponse = makeBold(aiResponse);
