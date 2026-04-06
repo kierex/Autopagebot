@@ -1,36 +1,25 @@
 const axios = require("axios");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { sendMessage } = require('../handles/sendMessage');
 
-// Initialize Gemini with API key - YOU CAN CHANGE THIS
-const GEMINI_API_KEY = "AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI"; // 👈 PASTE YOUR API KEY HERE
-
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// New Gemini API configuration
+const GEMINI_API_URL = 'https://kryptonite-api-library.onrender.com/api/gemini-vision';
 
 module.exports = {
   name: "gemini",
-  description: "Interact with Gemini 1.5/1.5 Pro for text or image input (Official API)",
+  description: "Interact with Gemini AI for text or image input (Krypton API)",
   author: "AutoPageBot",
-  version: "2.0.0",
+  version: "2.1.0",
   category: "ai",
   cooldown: 3,
 
   async execute(senderId, args, pageAccessToken, event, imageUrl, sendMessageFunc, imageCache) {
-    // Check if API key is configured
-    if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
-      return sendMessage(senderId, { 
-        text: `⚠️ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗣𝗜 𝗞𝗲𝘆 𝗡𝗲𝗲𝗱𝗲𝗱\n━━━━━━━━━━━━━━━━━━\nPlease set your Gemini API key in the command file.\n\n📍 Location: commands/gemini.js\n🔑 Variable: GEMINI_API_KEY\n\n📝 Get your API key at:\nhttps://makersuite.google.com/app/apikey` 
-      }, pageAccessToken);
-    }
-
     const userPrompt = args.join(" ");
 
     // Check if there's a question or image
     if (!userPrompt && !imageUrl) {
       return sendMessage(
         senderId,
-        { text: `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\nℹ️ Please provide a question or image.\n\n📝 Usage:\n• Text: gemini what is AI?\n• Image: gemini describe this [with image]\n• Image URL: gemini analyze` },
+        { text: `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\nℹ️ Please provide a question or image.\n\n📝 Usage:\n• Text: gemini what is AI?\n• Image: gemini describe this [with image]\n• Image URL: gemini analyze https://example.com/photo.jpg` },
         pageAccessToken
       );
     }
@@ -70,38 +59,38 @@ module.exports = {
         finalPrompt = "Please describe this image in detail.";
       }
 
-      // Initialize model
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      
-      let result;
       let aiResponse;
 
       if (finalImageUrl && finalPrompt) {
-        // Image + Text mode
-        const imageResponse = await axios.get(finalImageUrl, {
-          responseType: 'arraybuffer',
-          timeout: 30000
+        // Image + Text mode using Krypton API
+        const encodedPrompt = encodeURIComponent(finalPrompt);
+        const encodedImageUrl = encodeURIComponent(finalImageUrl);
+        const apiUrl = `${GEMINI_API_URL}?prompt=${encodedPrompt}&uid=${senderId}&imgUrl=${encodedImageUrl}&apikey=AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI`;
+        
+        const response = await axios.get(apiUrl, {
+          timeout: 60000 // 60 seconds timeout
         });
         
-        const base64Image = Buffer.from(imageResponse.data).toString('base64');
-        const mimeType = imageResponse.headers['content-type'] || 'image/jpeg';
-        
-        result = await model.generateContent([
-          { text: finalPrompt },
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: base64Image
-            }
-          }
-        ]);
-        
-        aiResponse = await result.response.text();
+        if (response.data && response.data.status === true) {
+          aiResponse = response.data.response;
+        } else {
+          throw new Error(response.data?.message || "Failed to get response from Gemini API");
+        }
       } 
       else if (finalPrompt) {
-        // Text-only mode
-        result = await model.generateContent(finalPrompt);
-        aiResponse = await result.response.text();
+        // Text-only mode (no image)
+        const encodedPrompt = encodeURIComponent(finalPrompt);
+        const apiUrl = `${GEMINI_API_URL}?prompt=${encodedPrompt}&uid=${senderId}&apikey=AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI`;
+        
+        const response = await axios.get(apiUrl, {
+          timeout: 60000
+        });
+        
+        if (response.data && response.data.status === true) {
+          aiResponse = response.data.response;
+        } else {
+          throw new Error(response.data?.message || "Failed to get response from Gemini API");
+        }
       }
       else {
         return sendMessage(senderId, { text: `❌ Please provide a question or image.` }, pageAccessToken);
@@ -112,7 +101,7 @@ module.exports = {
       }
 
       // Format and send response
-      const message = `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\n${aiResponse}\n━━━━━━━━━━━━━━━━━━\n💡 Powered by Google Gemini 1.5 Flash`;
+      const message = `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\n${aiResponse}\n━━━━━━━━━━━━━━━━━━\n💡 Powered by Krypton Gemini API`;
       
       await sendConcatenatedMessage(senderId, message, pageAccessToken);
 
@@ -121,23 +110,20 @@ module.exports = {
       
       let errorMsg = `❌ Error: `;
       
-      if (error.message.includes('API key') || error.message.includes('403') || error.message.includes('401')) {
-        errorMsg += `Invalid API key. Please check your Gemini API key in the command file.`;
-      } 
-      else if (error.message.includes('safety')) {
-        errorMsg += `Content blocked by Gemini's safety filters. Please try a different prompt or image.`;
-      }
-      else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+      if (error.message.includes('timeout') || error.code === 'ECONNABORTED') {
         errorMsg += `Request timeout. Please try again.`;
+      } 
+      else if (error.response?.status === 403 || error.message.includes('API key')) {
+        errorMsg += `API key error. Please contact support.`;
       }
-      else if (error.message.includes('quota')) {
-        errorMsg += `API quota exceeded. Please try again later.`;
+      else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+        errorMsg += `Network error. Please check your connection.`;
       }
       else {
         errorMsg += error.message || "Something went wrong.";
       }
       
-      sendMessage(senderId, { text: errorMsg }, pageAccessToken);
+      await sendMessage(senderId, { text: errorMsg }, pageAccessToken);
     }
   }
 };
