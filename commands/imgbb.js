@@ -1,77 +1,38 @@
 const axios = require('axios');
-const FormData = require('form-data');
 const { sendMessage } = require('../handles/sendMessage');
-
-const IMGBB_API_KEY = "1b4d99fa0c3195efe42ceb62670f2a25";
 
 module.exports = {
   name: ['imgbb'],
-  usage: 'Reply to an image with "imgbb"',
+  usage: 'Send an image and type "imgbb" to upload to ImgBB',
   version: '1.0.0',
   author: 'AutoPageBot',
   category: 'uploader',
-  cooldown: 5,
+  cooldown: 0,
 
   async execute(senderId, args, pageAccessToken, imageUrl) {
     if (!imageUrl) {
       return sendMessage(senderId, {
-        text: '❌ No attachment detected. Please send or reply to an image first.'
+        text: '❌ No attachment detected. Please send an image first.'
       }, pageAccessToken);
     }
 
-    await sendMessage(senderId, { 
-      text: '⌛ Uploading the image to ImgBB, please wait...' 
-    }, pageAccessToken);
+    await sendMessage(senderId, { text: '⌛ 𝗨𝗽𝗹𝗼𝗮𝗱𝗶𝗻𝗴 𝘁𝗵𝗲 𝗶𝗺𝗮𝗴𝗲 𝘁𝗼 𝗜𝗺𝗴𝗕𝗕, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁...' }, pageAccessToken);
 
     try {
-      // Download the image from Facebook URL
-      const imageResponse = await axios.get(imageUrl, { 
-        responseType: 'arraybuffer',
-        timeout: 30000
-      });
-      
-      // Prepare form data for ImgBB
-      const formData = new FormData();
-      formData.append('image', Buffer.from(imageResponse.data, 'binary'), { 
-        filename: `image_${Date.now()}.jpg` 
-      });
+      const response = await axios.get(`https://jerome-web.gleeze.com/service/api/upload-imgbbimage?imageUrl=${encodeURIComponent(imageUrl)}`);
+      const imgbbLink = response?.data?.imgUrl;
 
-      // Upload to ImgBB
-      const uploadResponse = await axios.post('https://api.imgbb.com/1/upload', formData, {
-        headers: {
-          ...formData.getHeaders(),
-          'Content-Type': 'multipart/form-data'
-        },
-        params: {
-          key: IMGBB_API_KEY
-        },
-        timeout: 30000
-      });
-
-      if (!uploadResponse.data?.data?.url) {
-        throw new Error('ImgBB URL not found in the response');
+      if (!imgbbLink) {
+        throw new Error('❌ ImgBB link not found in the response');
       }
 
-      const imgbbLink = uploadResponse.data.data.url;
-      const deleteUrl = uploadResponse.data.data.delete_url || 'Not available';
-
       await sendMessage(senderId, {
-        text: `✅ Uploaded Successfully to ImgBB!\n\n🔗 Link: ${imgbbLink}\n🗑️ Delete URL: ${deleteUrl}`
+        text: `✅ 𝗨𝗽𝗹𝗼𝗮𝗱𝗲𝗱 𝗦𝘂𝗰𝗰𝗲𝘀𝘀𝗳𝘂𝗹𝗹𝘆\n\n${imgbbLink}`
       }, pageAccessToken);
-
     } catch (error) {
-      console.error('Error uploading image to ImgBB:', error.response?.data || error.message);
-      
-      let errorMessage = 'An error occurred while uploading the image to ImgBB.';
-      
-      if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid image format or API error.';
-      }
-      
+      console.error('❌ Error uploading image to ImgBB:', error.response?.data || error.message);
       await sendMessage(senderId, {
-        text: `❌ ${errorMessage} Please try again later.`
+        text: '❌ An error occurred while uploading the image to ImgBB. Please try again later.'
       }, pageAccessToken);
     }
   }
