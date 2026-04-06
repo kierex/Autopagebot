@@ -1,92 +1,15 @@
 const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
-const fs = require('fs');
-const path = require('path');
+const memory = require('../utils/memoryManager');
 
 // API Keys (Primary + Backups)
 const API_KEYS = [
-  'AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI', // Primary
-  'AIzaSyDQ4TD9hnEnAt3JGcVjIm9yWbmuc9cGt1M', // Backup 1
-  'AIzaSyC5KE1o0o5sA4G5mYXS7GSemdHf2wQ8y3g', // Backup 2
-  'AIzaSyDuOaOrtTvx9W5Jw6eQOIJb613uEP-vgWQ', // Backup 3
-  'AIzaSyB_UMcCeW7_cnkigbePnh7GVWWEIrziaFQ'  // Backup 4
+  'AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI',
+  'AIzaSyDQ4TD9hnEnAt3JGcVjIm9yWbmuc9cGt1M',
+  'AIzaSyC5KE1o0o5sA4G5mYXS7GSemdHf2wQ8y3g',
+  'AIzaSyDuOaOrtTvx9W5Jw6eQOIJb613uEP-vgWQ',
+  'AIzaSyB_UMcCeW7_cnkigbePnh7GVWWEIrziaFQ'
 ];
-
-// Conversation storage file
-const CONVERSATIONS_FILE = path.join(__dirname, '../conversations.json');
-let conversations = new Map();
-
-// Load conversations from file
-function loadConversations() {
-    try {
-        if (fs.existsSync(CONVERSATIONS_FILE)) {
-            const data = JSON.parse(fs.readFileSync(CONVERSATIONS_FILE, 'utf8'));
-            conversations = new Map(Object.entries(data));
-            console.log(`📚 Loaded ${conversations.size} conversations`);
-        }
-    } catch (error) {
-        console.error('Error loading conversations:', error.message);
-    }
-}
-
-// Save conversations to file
-function saveConversations() {
-    try {
-        const data = Object.fromEntries(conversations);
-        fs.writeFileSync(CONVERSATIONS_FILE, JSON.stringify(data, null, 2));
-    } catch (error) {
-        console.error('Error saving conversations:', error.message);
-    }
-}
-
-// Get conversation history for user
-function getConversation(userId) {
-    if (!conversations.has(userId)) {
-        conversations.set(userId, {
-            messages: [],
-            lastActive: Date.now()
-        });
-    }
-    return conversations.get(userId);
-}
-
-// Add message to conversation
-function addToConversation(userId, role, content) {
-    const conv = getConversation(userId);
-    conv.messages.push({
-        role: role,
-        content: content,
-        timestamp: Date.now()
-    });
-    
-    // Keep only last 20 messages for context
-    if (conv.messages.length > 20) {
-        conv.messages = conv.messages.slice(-20);
-    }
-    
-    conv.lastActive = Date.now();
-    conversations.set(userId, conv);
-    saveConversations();
-}
-
-// Clear conversation for user
-function clearConversation(userId) {
-    conversations.delete(userId);
-    saveConversations();
-}
-
-// Build conversation context
-function buildContext(userId, currentMessage) {
-    const conv = getConversation(userId);
-    const recentMessages = conv.messages.slice(-10); // Last 10 messages
-    
-    let context = '';
-    for (const msg of recentMessages) {
-        context += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
-    }
-    
-    return context;
-}
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -119,25 +42,18 @@ function splitMessage(text) {
 }
 
 module.exports = {
-    name: ['ai', 'chat', 'gpt', 'ask', 'gemini'],
-    usage: 'ai [question] or ai reset or ai clear',
+    name: ['ai'],
+    usage: 'ai [question] or ai reset or ai stats',
     version: '1.0.0',
     author: 'AutoPagebot',
     category: 'ai',
     cooldown: 5,
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
-        // Load conversations on first run
-        if (conversations.size === 0) {
-            loadConversations();
-        }
-        
         const message = args.join(' ');
 
         if (!args.length) {
-            const conv = getConversation(senderId);
-            const messageCount = conv.messages.length;
-            
+            const stats = memory.getStats(senderId);
             return sendMessage(senderId, { 
                 text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜
 
@@ -147,13 +63,12 @@ module.exports = {
 • ai Hello! My name is John
 • ai What's my name? (remembers context)
 • ai Tell me a joke
-• ai Explain quantum physics
 
 🔄 Commands:
 • ai reset - Clear conversation history
 • ai stats - Show conversation stats
 
-📊 Current session: ${messageCount} messages
+📊 Session: ${stats.messageCount} messages
 
 💡 The AI remembers your conversation!`
             }, pageAccessToken);
@@ -161,21 +76,29 @@ module.exports = {
 
         // Handle reset command
         if (message.toLowerCase() === 'reset' || message.toLowerCase() === 'clear') {
-            clearConversation(senderId);
+            memory.clearConversation(senderId);
             return sendMessage(senderId, {
-                text: '🧹 Conversation history has been cleared!\n\n💬 You can now start a fresh conversation.'
+                text: '🧹 Conversation history cleared from memory/conversations.json!\n\n💬 Start a fresh conversation.'
             }, pageAccessToken);
         }
 
         // Handle stats command
         if (message.toLowerCase() === 'stats') {
-            const conv = getConversation(senderId);
+            const stats = memory.getStats(senderId);
+            const lastActive = new Date(stats.lastActive).toLocaleString('en-PH', {
+                timeZone: 'Asia/Manila'
+            });
+            const created = new Date(stats.createdAt).toLocaleString('en-PH', {
+                timeZone: 'Asia/Manila'
+            });
+            
             return sendMessage(senderId, {
                 text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀
 
-• Total messages: ${conv.messages.length}
-• Last active: ${new Date(conv.lastActive).toLocaleString()}
-• Session active: Yes
+• Messages: ${stats.messageCount}
+• Created: ${created}
+• Last active: ${lastActive}
+• Storage: memory/conversations.json
 
 💡 Use "ai reset" to clear history`
             }, pageAccessToken);
@@ -188,7 +111,7 @@ module.exports = {
         await sendMessage(senderId, { text: '🤔 Thinking...' }, pageAccessToken);
 
         // Build context from conversation history
-        const context = buildContext(senderId, message);
+        const context = memory.getContext(senderId, 10);
         let prompt = message;
         
         if (context) {
@@ -213,14 +136,12 @@ module.exports = {
 
                 if (response.data && response.data.status === true && response.data.response) {
                     aiResponse = response.data.response;
-                    console.log(`✅ API key ${i + 1} worked successfully`);
+                    console.log(`✅ API key ${i + 1} worked`);
                     break;
-                } else {
-                    throw new Error('Invalid API response');
                 }
             } catch (error) {
                 lastError = error;
-                console.log(`❌ API key ${i + 1} failed:`, error.message);
+                console.log(`❌ API key ${i + 1} failed`);
             }
         }
 
@@ -232,9 +153,9 @@ module.exports = {
             return;
         }
 
-        // Save to conversation history
-        addToConversation(senderId, 'user', message);
-        addToConversation(senderId, 'assistant', aiResponse);
+        // Save to conversation memory
+        memory.addMessage(senderId, 'user', message);
+        memory.addMessage(senderId, 'assistant', aiResponse);
 
         aiResponse = aiResponse.trim();
         aiResponse = makeBold(aiResponse);
