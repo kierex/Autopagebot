@@ -2,7 +2,7 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
-    name: ['birdfact', 'bird', 'birdfacts', 'avian'],
+    name: ['birdfact', 'bird'],
     usage: 'birdfact',
     version: '1.0.0',
     author: 'AutoPageBot',
