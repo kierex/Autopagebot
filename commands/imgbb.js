@@ -9,7 +9,7 @@ module.exports = {
   usage: 'Reply to an image with "imgbb"',
   version: '1.0.0',
   author: 'AutoPageBot',
-  category: 'uploader',
+  category: 'uploaders',
   cooldown: 5,
 
   async execute(senderId, args, pageAccessToken, imageUrl) {
