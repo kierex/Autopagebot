@@ -21,7 +21,6 @@
             position: relative;
         }
 
-        /* Particle.js canvas */
         #particles-js {
             position: fixed;
             top: 0;
@@ -64,9 +63,12 @@
             color: #667eea;
         }
 
-        body.light-mode .tutorial-step {
+        body.light-mode .commands-category {
             background: #f8f9fa;
-            border-left: 4px solid #667eea;
+        }
+
+        body.light-mode .command-item {
+            background: white;
         }
 
         /* Dark Mode */
@@ -102,20 +104,12 @@
             color: #667eea;
         }
 
-        body.dark-mode .tutorial-step {
+        body.dark-mode .commands-category {
             background: #2a2a3e;
-            border-left: 4px solid #667eea;
         }
 
-        body.dark-mode .input-group input,
-        body.dark-mode .input-group textarea {
-            background: #2a2a3e;
-            border-color: #3a3a4e;
-            color: white;
-        }
-
-        body.dark-mode .config-row {
-            background: #2a2a3e;
+        body.dark-mode .command-item {
+            background: #1a1a2e;
         }
 
         /* Layout */
@@ -126,7 +120,7 @@
             z-index: 1;
         }
 
-        /* Sidebar Menu - LEFT */
+        /* Sidebar */
         .sidebar {
             width: 280px;
             position: fixed;
@@ -221,7 +215,7 @@
             max-width: calc(100% - 280px);
         }
 
-        /* Theme Toggle - RIGHT side */
+        /* Theme Toggle */
         .theme-toggle {
             position: fixed;
             top: 20px;
@@ -363,107 +357,76 @@
             margin-bottom: 20px;
         }
 
-        /* Tutorial Styles */
-        .tutorial-container {
-            max-width: 100%;
+        /* Commands Styles */
+        .commands-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        .tutorial-step {
-            background: rgba(255,255,255,0.05);
+        .commands-category {
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
         }
 
-        .tutorial-step:hover {
-            transform: translateX(5px);
-        }
-
-        .step-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .step-number {
-            width: 40px;
-            height: 40px;
+        .category-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
+            padding: 12px 20px;
             color: white;
-        }
-
-        .step-title {
-            font-size: 1.2rem;
             font-weight: 700;
+            font-size: 1rem;
         }
 
-        .step-icon {
-            font-size: 1.5rem;
+        .category-header i {
+            margin-right: 10px;
         }
 
-        .step-content {
-            padding-left: 55px;
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            padding: 15px;
         }
 
-        .step-content ul, .step-content ol {
-            margin-left: 20px;
-            margin-top: 10px;
-            margin-bottom: 10px;
+        .command-item {
+            padding: 10px 15px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: rgba(255,255,255,0.05);
         }
 
-        .step-content li {
-            margin-bottom: 8px;
-            line-height: 1.5;
+        .command-item:hover {
+            transform: translateX(5px);
+            background: rgba(102,126,234,0.1);
         }
 
-        .step-content p {
-            margin-bottom: 10px;
-            line-height: 1.5;
+        .command-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #667eea;
         }
 
-        .warning-box {
-            background: rgba(231, 76, 60, 0.1);
-            border-left: 4px solid #e74c3c;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
+        .command-name i {
+            margin-right: 5px;
         }
 
-        .note-box {
-            background: rgba(52, 152, 219, 0.1);
-            border-left: 4px solid #3498db;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .success-box {
-            background: rgba(39, 174, 96, 0.1);
-            border-left: 4px solid #27ae60;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .code-block {
-            background: rgba(0,0,0,0.05);
-            padding: 10px;
-            border-radius: 8px;
+        .command-usage {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 3px;
             font-family: monospace;
-            font-size: 0.8rem;
-            margin: 10px 0;
         }
 
-        body.dark-mode .code-block {
-            background: rgba(0,0,0,0.3);
+        .command-cooldown {
+            font-size: 0.65rem;
+            color: #27ae60;
+            margin-top: 3px;
+        }
+
+        .command-cooldown i {
+            margin-right: 3px;
         }
 
         /* Input Groups */
@@ -493,7 +456,7 @@
             border-color: #667eea;
         }
 
-        /* Checkbox Group */
+        /* Checkbox */
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -547,6 +510,7 @@
             margin-bottom: 10px;
             flex-wrap: wrap;
             gap: 8px;
+            background: rgba(0,0,0,0.03);
         }
 
         .config-label {
@@ -580,7 +544,7 @@
         /* Sessions Grid */
         .sessions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 15px;
         }
 
@@ -618,7 +582,94 @@
         .session-details {
             font-size: 0.75rem;
             opacity: 0.8;
-            line-height: 1.6;
+            line-height: 1.8;
+        }
+
+        .session-details i {
+            width: 18px;
+            margin-right: 5px;
+        }
+
+        .uptime-value {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        /* Tutorial */
+        .tutorial-step {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .tutorial-step:hover {
+            transform: translateX(5px);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .step-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .step-content {
+            padding-left: 55px;
+        }
+
+        .step-content ul, .step-content ol {
+            margin-left: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .step-content li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .warning-box {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid #e74c3c;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .note-box {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .success-box {
+            background: rgba(39, 174, 96, 0.1);
+            border-left: 4px solid #27ae60;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
         }
 
         /* Message */
@@ -749,6 +800,9 @@
             .dashboard-stats {
                 grid-template-columns: repeat(2, 1fr);
             }
+            .commands-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 600px) {
@@ -788,13 +842,11 @@
 </head>
 <body>
     <div id="particles-js"></div>
-    
-    <!-- Theme Toggle - RIGHT side -->
+
     <button class="theme-toggle" onclick="toggleTheme()">
         <i class="fas fa-sun"></i>
     </button>
 
-    <!-- Mobile Menu Toggle -->
     <button class="menu-toggle" onclick="toggleMobileMenu()" style="display: none;">
         <i class="fas fa-bars"></i>
     </button>
@@ -806,7 +858,7 @@
                 <h2><i class="fas fa-robot"></i> AutoPageBot</h2>
                 <p>Messenger Automation v2.1</p>
             </div>
-            
+
             <div class="sidebar-menu">
                 <div class="menu-item active" data-section="dashboard">
                     <i class="fas fa-tachometer-alt"></i>
@@ -821,6 +873,11 @@
                     <span>Active Sessions</span>
                     <span class="menu-badge" id="menuBadgeCount">0</span>
                 </div>
+                <div class="menu-item" data-section="commands">
+                    <i class="fas fa-terminal"></i>
+                    <span>Available Commands</span>
+                    <span class="menu-badge" id="commandsBadgeCount">0</span>
+                </div>
                 <div class="menu-item" data-section="config">
                     <i class="fab fa-facebook"></i>
                     <span>Facebook Config</span>
@@ -830,7 +887,7 @@
                     <span>Tutorial</span>
                 </div>
             </div>
-            
+
             <div class="sidebar-footer">
                 <div class="menu-item" onclick="showPrivacy()">
                     <i class="fas fa-shield-alt"></i>
@@ -895,6 +952,10 @@
                             <span><i class="fas fa-clock"></i> Server Uptime</span>
                             <span id="serverUptime" style="font-weight: bold;">Loading...</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span><i class="fas fa-calendar-alt"></i> Started At</span>
+                            <span id="serverStartTime" style="font-weight: bold;">Loading...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -904,33 +965,33 @@
                 <div class="card">
                     <h2><i class="fas fa-plug"></i> Access your page</h2>
                     <p>Paste your Page Token to link your Facebook page</p>
-                    
+
                     <form id="connectForm">
                         <div class="input-group">
                             <label><i class="fas fa-user"></i> YOUR NAME</label>
                             <input type="text" id="userName" placeholder="e.g. John">
                         </div>
-                        
+
                         <div class="input-group">
                             <label><i class="fas fa-tag"></i> PAGE NAME</label>
                             <input type="text" id="pageName" placeholder="e.g. Auto Page Bot">
                         </div>
-                        
+
                         <div class="input-group">
                             <label><i class="fas fa-key"></i> PAGE TOKEN *</label>
                             <textarea id="pageToken" rows="3" placeholder="Paste your Page Access Token here..."></textarea>
                         </div>
-                        
+
                         <div class="checkbox-group">
                             <input type="checkbox" id="agreeTerms">
                             <label for="agreeTerms">I agree to the <a href="#" onclick="showPrivacy()" style="color: #667eea;">Privacy Policy</a> and Terms of Service</label>
                         </div>
-                        
+
                         <button type="submit" class="btn-connect" id="connectBtn" disabled>
                             <i class="fas fa-link"></i> Connect Page →
                         </button>
                     </form>
-                    
+
                     <div id="message" class="message"></div>
                 </div>
             </div>
@@ -939,9 +1000,20 @@
             <div id="sessions-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-globe"></i> Active Sessions</h2>
-                    <p>All connected pages and their status</p>
+                    <p>All connected pages and their status with uptime</p>
                     <div id="sessionsList" class="sessions-grid">
                         <div class="loading">Loading sessions...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Commands Section -->
+            <div id="commands-section" class="section">
+                <div class="card">
+                    <h2><i class="fas fa-terminal"></i> Available Commands</h2>
+                    <p>All available bot commands grouped by category</p>
+                    <div id="commandsList" class="commands-container">
+                        <div class="loading">Loading commands...</div>
                     </div>
                 </div>
             </div>
@@ -974,185 +1046,36 @@
                 <div class="card">
                     <h2><i class="fas fa-graduation-cap"></i> 🤖 AutoPageBot Setup Tutorial</h2>
                     <p>Complete guide to creating and deploying your Facebook Messenger bot</p>
-                    
                     <div class="tutorial-container">
-                        <!-- Prerequisites -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">📋</div>
-                                <div class="step-title">Prerequisites</div>
-                            </div>
-                            <div class="step-content">
-                                <ul>
-                                    <li>A Facebook account</li>
-                                    <li>A GitHub account with your bot project</li>
-                                    <li>A hosting platform account (Render or Railway)</li>
-                                </ul>
-                            </div>
+                            <div class="step-header"><div class="step-number">📋</div><div class="step-title">Prerequisites</div></div>
+                            <div class="step-content"><ul><li>A Facebook account</li><li>A hosting platform account (Render or Railway)</li></ul></div>
                         </div>
-
-                        <!-- Step 1 -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">1</div>
-                                <div class="step-title">Initial Facebook Setup</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>Open your web browser and log in to your Facebook account</li>
-                                    <li>Create a Facebook Page (if you don't have one already)</li>
-                                    <li>Navigate to developers.facebook.com/apps</li>
-                                </ol>
-                            </div>
+                            <div class="step-header"><div class="step-number">1</div><div class="step-title">Initial Facebook Setup</div></div>
+                            <div class="step-content"><ol><li>Log in to Facebook</li><li>Create a Facebook Page</li><li>Go to developers.facebook.com/apps</li></ol></div>
                         </div>
-
-                        <!-- Step 2 -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">2</div>
-                                <div class="step-title">Create a Facebook App</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>Click on "Create App"</li>
-                                    <li>Select "Business" as the app type</li>
-                                    <li>Fill in the required details:
-                                        <ul>
-                                            <li>App Display Name</li>
-                                            <li>Contact Email</li>
-                                        </ul>
-                                    </li>
-                                    <li>Click "Create App"</li>
-                                </ol>
-                            </div>
+                            <div class="step-header"><div class="step-number">2</div><div class="step-title">Create a Facebook App</div></div>
+                            <div class="step-content"><ol><li>Click "Create App"</li><li>Select "Business" as type</li><li>Fill in details and click "Create App"</li></ol></div>
                         </div>
-
-                        <!-- Step 3 -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">3</div>
-                                <div class="step-title">Add Messenger and Generate Access Token</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>In your app dashboard, click "Add Product"</li>
-                                    <li>Find "Messenger" and click "Set Up"</li>
-                                    <li>Scroll to the "Access Tokens" section</li>
-                                    <li>Click "Add or Remove Pages" and connect your Facebook Page</li>
-                                    <li>Click "Generate Token" and copy the Page Access Token</li>
-                                </ol>
-                                <div class="warning-box">
-                                    ⚠️ <strong>Important:</strong> Save this token securely. You'll need it in the next step!
-                                </div>
-                            </div>
+                            <div class="step-header"><div class="step-number">3</div><div class="step-title">Generate Access Token</div></div>
+                            <div class="step-content"><ol><li>Add Messenger product</li><li>Connect your Facebook Page</li><li>Generate and copy Page Access Token</li></ol>
+                            <div class="warning-box">⚠️ Save this token securely!</div></div>
                         </div>
-
-                        <!-- Step 4 -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">4</div>
-                                <div class="step-title">Configure AutoPageBot and Deploy</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>Go to your AutoPageBot dashboard</li>
-                                    <li>Navigate to the "Connect Page" section</li>
-                                    <li>Enter your name and page name (optional)</li>
-                                    <li>Paste your Page Access Token</li>
-                                    <li>Click "Connect Page →"</li>
-                                    <li>Deploy your project to Render or Railway:
-                                        <ul>
-                                            <li>Render: Get the live link (e.g., https://your-app.onrender.com)</li>
-                                            <li>Railway: Get the public domain URL</li>
-                                        </ul>
-                                    </li>
-                                </ol>
-                                <div class="note-box">
-                                    💡 <strong>Note:</strong> Make sure your deployment is successful and the app is running before proceeding!
-                                </div>
-                            </div>
+                            <div class="step-header"><div class="step-number">4</div><div class="step-title">Connect Page</div></div>
+                            <div class="step-content"><ol><li>Go to Connect Page section</li><li>Enter name and paste token</li><li>Click Connect Page</li></ol></div>
                         </div>
-
-                        <!-- Step 5 -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">5</div>
-                                <div class="step-title">Set Up Webhooks</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>Go back to your Facebook app dashboard</li>
-                                    <li>Navigate to Messenger API Settings → Webhooks</li>
-                                    <li>Click "Add Callback URL" or "Setup Webhooks"</li>
-                                    <li>Enter the following:
-                                        <ul>
-                                            <li>Callback URL: <code id="tutorialWebhookUrl" style="background: rgba(0,0,0,0.1); padding: 2px 5px; border-radius: 4px;">loading...</code></li>
-                                            <li>Verify Token: <code style="background: rgba(0,0,0,0.1); padding: 2px 5px; border-radius: 4px;">bot</code></li>
-                                        </ul>
-                                    </li>
-                                    <li>Subscribe to these fields:
-                                        <ul>
-                                            <li>messages</li>
-                                            <li>messaging_optins</li>
-                                            <li>messaging_postbacks</li>
-                                        </ul>
-                                    </li>
-                                    <li>Click "Verify and Save"</li>
-                                    <li>Add your page subscription to complete the webhook setup</li>
-                                </ol>
-                            </div>
+                            <div class="step-header"><div class="step-number">5</div><div class="step-title">Set Up Webhooks</div></div>
+                            <div class="step-content"><ol><li>Go to Messenger API Settings</li><li>Add Callback URL: <code id="tutorialWebhookUrl">loading...</code></li><li>Verify Token: <code>bot</code></li><li>Subscribe to messages, messaging_postbacks</li></ol></div>
                         </div>
-
-                        <!-- Step 6 -->
                         <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">6</div>
-                                <div class="step-title">Configure Privacy Policy (Required for Public App)</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>Go to freeprivacypolicy.com/free-privacy-policy-generator</li>
-                                    <li>Generate your free privacy policy</li>
-                                    <li>Copy the privacy policy URL</li>
-                                    <li>In your Facebook app dashboard, go to App Settings → Basic</li>
-                                    <li>Scroll to "Privacy Policy URL" and paste your privacy policy link</li>
-                                    <li>Save the changes</li>
-                                </ol>
-                            </div>
-                        </div>
-
-                        <!-- Step 7 -->
-                        <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">7</div>
-                                <div class="step-title">Make Your App Live</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>In your app dashboard, look for the toggle to make your app "Live"</li>
-                                    <li>Switch your app from "Development" mode to "Live" mode</li>
-                                    <li>After making it live, generate a new Page Access Token</li>
-                                    <li>Go back to AutoPageBot dashboard and connect your page again with the new token</li>
-                                </ol>
-                            </div>
-                        </div>
-
-                        <!-- Step 8 -->
-                        <div class="tutorial-step">
-                            <div class="step-header">
-                                <div class="step-number">8</div>
-                                <div class="step-title">Test Your Messenger Bot</div>
-                            </div>
-                            <div class="step-content">
-                                <ol>
-                                    <li>Go to your Facebook Page</li>
-                                    <li>Send a message to your page (e.g., type "help" to see available commands)</li>
-                                    <li>Check if the bot responds correctly</li>
-                                </ol>
-                                <div class="success-box">
-                                    ✅ <strong>Success!</strong> If your bot responds, congratulations! Your Messenger bot is now live and working!
-                                </div>
-                            </div>
+                            <div class="step-header"><div class="step-number">6</div><div class="step-title">Make App Live</div></div>
+                            <div class="step-content"><ol><li>Toggle app from Development to Live</li><li>Generate new token and reconnect</li></ol>
+                            <div class="success-box">✅ Your bot is now live!</div></div>
                         </div>
                     </div>
                 </div>
@@ -1169,18 +1092,7 @@
         <div class="modal-content">
             <h2><i class="fas fa-shield-alt"></i> Privacy Policy</h2>
             <p>AutoPageBot respects your privacy. We collect:</p>
-            <ul>
-                <li>Page access tokens (stored locally in tokens.json)</li>
-                <li>Page names and IDs for display</li>
-                <li>Message content for bot responses</li>
-                <li>Session data for authentication</li>
-            </ul>
-            <p><strong>Data Security:</strong></p>
-            <ul>
-                <li>Tokens are stored encrypted</li>
-                <li>No data shared with third parties</li>
-                <li>You can delete tokens manually from tokens.json</li>
-            </ul>
+            <ul><li>Page access tokens (stored locally in tokens.json)</li><li>Page names and IDs for display</li><li>Message content for bot responses</li></ul>
             <p>By using this service, you agree to these terms.</p>
             <div class="modal-buttons">
                 <button class="btn-accept" onclick="acceptPrivacy()"><i class="fas fa-check"></i> Accept</button>
@@ -1191,11 +1103,10 @@
 
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        // Store session start times for uptime calculation
         let sessionStartTimes = new Map();
-        let serverStartTime = Date.now();
+        let serverStartTime = null;
+        let uptimeInterval;
 
-        // Particle.js Configuration
         particlesJS("particles-js", {
             particles: {
                 number: { value: 60, density: { enable: true, value_area: 800 } },
@@ -1208,10 +1119,7 @@
             },
             interactivity: {
                 detect_on: "canvas",
-                events: { 
-                    onhover: { enable: true, mode: "repulse" }, 
-                    onclick: { enable: true, mode: "push" } 
-                }
+                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" } }
             }
         });
 
@@ -1240,63 +1148,76 @@
             }
         }
 
-        // Sidebar Menu Navigation
+        // Navigation
         document.querySelectorAll('.menu-item[data-section]').forEach(item => {
             item.addEventListener('click', () => {
                 const sectionId = item.getAttribute('data-section');
-                
-                // Update active states
                 document.querySelectorAll('.menu-item[data-section]').forEach(m => m.classList.remove('active'));
                 item.classList.add('active');
-                
-                // Show selected section
                 document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
                 document.getElementById(`${sectionId}-section`).classList.add('active-section');
-                
-                // Close mobile menu if open
-                if (window.innerWidth <= 600) {
-                    document.getElementById('sidebar').classList.remove('open');
-                }
+                if (window.innerWidth <= 600) document.getElementById('sidebar').classList.remove('open');
             });
         });
 
-        // Mobile menu toggle
-        function toggleMobileMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
-
-        // Show mobile menu button on small screens
-        if (window.innerWidth <= 600) {
-            document.querySelector('.menu-toggle').style.display = 'block';
-        }
-
+        function toggleMobileMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+        if (window.innerWidth <= 600) document.querySelector('.menu-toggle').style.display = 'block';
         window.addEventListener('resize', () => {
-            if (window.innerWidth <= 600) {
-                document.querySelector('.menu-toggle').style.display = 'block';
-            } else {
-                document.querySelector('.menu-toggle').style.display = 'none';
-                document.getElementById('sidebar').classList.remove('open');
-            }
+            if (window.innerWidth <= 600) document.querySelector('.menu-toggle').style.display = 'block';
+            else { document.querySelector('.menu-toggle').style.display = 'none'; document.getElementById('sidebar').classList.remove('open'); }
         });
 
-        // Get server uptime
-        function getUptime(startTime) {
-            const diffMs = Date.now() - startTime;
-            const diffSec = Math.floor(diffMs / 1000);
-            const hours = Math.floor(diffSec / 3600);
-            const minutes = Math.floor((diffSec % 3600) / 60);
-            const seconds = diffSec % 60;
-            
-            if (hours > 0) return `${hours}h ${minutes}m`;
-            if (minutes > 0) return `${minutes}m ${seconds}s`;
-            return `${seconds}s`;
+        // Format uptime function
+        function formatUptime(seconds) {
+            if (seconds < 0) seconds = 0;
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+            if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
+            if (minutes > 0) return `${minutes}m ${secs}s`;
+            return `${secs}s`;
         }
 
-        // Update server uptime
-        function updateServerUptime() {
-            document.getElementById('serverUptime').textContent = getUptime(serverStartTime);
+        // Load server info from backend
+        async function loadServerInfo() {
+            try {
+                const response = await fetch(`${window.location.origin}/api/server/info`);
+                const data = await response.json();
+                serverStartTime = data.startTime;
+                const uptimeSec = data.uptime;
+                document.getElementById('serverUptime').textContent = formatUptime(uptimeSec);
+                const startDate = new Date(serverStartTime).toLocaleString('en-PH', {
+                    timeZone: 'Asia/Manila',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+                document.getElementById('serverStartTime').textContent = startDate;
+            } catch (error) {
+                console.error('Failed to load server info:', error);
+                document.getElementById('serverUptime').textContent = 'Loading...';
+            }
         }
-        setInterval(updateServerUptime, 1000);
+
+        // Update server uptime in real-time
+        function startServerUptimeUpdater() {
+            if (uptimeInterval) clearInterval(uptimeInterval);
+            uptimeInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${window.location.origin}/api/server/uptime`);
+                    const data = await response.json();
+                    document.getElementById('serverUptime').textContent = formatUptime(data.uptime);
+                } catch (error) {
+                    console.error('Failed to update uptime:', error);
+                }
+            }, 1000);
+        }
 
         // Dashboard Info
         function updateDateTime() {
@@ -1317,16 +1238,11 @@
                 battery.addEventListener('levelchange', updateBattery);
                 battery.addEventListener('chargingchange', updateBattery);
             });
-        } else {
-            document.getElementById('battery').textContent = 'Not supported';
-        }
+        } else { document.getElementById('battery').textContent = 'Not supported'; }
 
         // IP Address
-        fetch('https://api.ipify.org?format=json')
-            .then(res => res.json())
-            .then(data => document.getElementById('ip').textContent = data.ip)
-            .catch(() => document.getElementById('ip').textContent = 'Unable to fetch');
-
+        fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => document.getElementById('ip').textContent = data.ip).catch(() => document.getElementById('ip').textContent = 'Unable to fetch');
+        
         // User Agent
         const ua = navigator.userAgent;
         document.getElementById('useragent').textContent = ua.length > 45 ? ua.slice(0, 45) + '...' : ua;
@@ -1339,20 +1255,14 @@
         // Checkbox enable button
         const agreeCheckbox = document.getElementById('agreeTerms');
         const connectBtn = document.getElementById('connectBtn');
-        
-        agreeCheckbox.addEventListener('change', () => {
-            connectBtn.disabled = !agreeCheckbox.checked;
-        });
+        agreeCheckbox.addEventListener('change', () => { connectBtn.disabled = !agreeCheckbox.checked; });
 
-        // API Functions
         const API_BASE = window.location.origin;
 
         async function loadSessions() {
             try {
                 const response = await fetch(`${API_BASE}/api/sessions`);
                 const data = await response.json();
-                
-                // Update badge count
                 document.getElementById('menuBadgeCount').textContent = data.count;
                 document.getElementById('statusActiveSessions').textContent = data.count;
                 
@@ -1361,16 +1271,29 @@
                     return;
                 }
                 
-                // Track new sessions for uptime
+                // Store session start times for uptime calculation
                 data.sessions.forEach(session => {
                     if (!sessionStartTimes.has(session.id)) {
-                        sessionStartTimes.set(session.id, new Date());
+                        sessionStartTimes.set(session.id, new Date(session.connectedAt));
                     }
                 });
                 
-                // Render sessions grid
-                document.getElementById('sessionsList').innerHTML = data.sessions.map(session => `
-                    <div class="session-card">
+                // Function to update uptimes in real-time
+                function updateSessionUptimes() {
+                    const uptimeElements = document.querySelectorAll('.session-uptime-value');
+                    uptimeElements.forEach(el => {
+                        const sessionId = el.getAttribute('data-session-id');
+                        const startTime = sessionStartTimes.get(sessionId);
+                        if (startTime) {
+                            const uptimeSec = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+                            el.textContent = formatUptime(uptimeSec);
+                        }
+                    });
+                }
+                
+                document.getElementById('sessionsList').innerHTML = data.sessions.map(session => {
+                    const uptimeSec = Math.floor((Date.now() - new Date(session.connectedAt).getTime()) / 1000);
+                    return `<div class="session-card">
                         <div class="session-header">
                             <span class="session-name"><i class="fas fa-rocket"></i> ${escapeHtml(session.name)}</span>
                             <span class="session-badge">● Online</span>
@@ -1378,120 +1301,93 @@
                         <div class="session-details">
                             <div><i class="fas fa-id-card"></i> ID: ${session.id}</div>
                             <div><i class="fas fa-user"></i> Owner: ${escapeHtml(session.owner || 'Unknown')}</div>
-                            <div><i class="fas fa-clock"></i> Connected: ${new Date(session.connectedAt).toLocaleString()}</div>
+                            <div><i class="fas fa-calendar-plus"></i> Connected: ${new Date(session.connectedAt).toLocaleString()}</div>
+                            <div><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime-value" data-session-id="${session.id}">${formatUptime(uptimeSec)}</span></div>
                             <div><i class="fab fa-facebook-messenger"></i> <a href="${session.messengerLink}" target="_blank" style="color: #667eea;">Open Messenger →</a></div>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
+                
+                // Start real-time uptime updates for sessions
+                if (window.sessionUptimeInterval) clearInterval(window.sessionUptimeInterval);
+                window.sessionUptimeInterval = setInterval(updateSessionUptimes, 1000);
                 
             } catch (error) {
                 console.error('Failed to load sessions:', error);
-                document.getElementById('sessionsList').innerHTML = '<div class="empty-sessions" style="text-align:center;padding:40px;"><i class="fas fa-exclamation-triangle"></i> Failed to load sessions</div>';
+                document.getElementById('sessionsList').innerHTML = '<div class="empty-sessions"><i class="fas fa-exclamation-triangle"></i> Failed to load sessions</div>';
             }
+        }
+
+        async function loadCommands() {
+            try {
+                const response = await fetch(`${API_BASE}/api/commands`);
+                const data = await response.json();
+                document.getElementById('commandsBadgeCount').textContent = data.count;
+                if (!data.commands || data.commands.length === 0) {
+                    document.getElementById('commandsList').innerHTML = '<div class="empty-sessions" style="text-align:center;padding:40px;"><i class="fas fa-terminal"></i> No commands found. Add commands to the /commands folder!</div>';
+                    return;
+                }
+                const categories = {};
+                const categoryNames = { ai: '🤖 AI', music: '🎧 Music', images: '🖼️ Images', search: '🔍 Search', tools: '⚒️ Tools', uploader: '📥 Uploader', system: '⚙️ System', fun: '🎮 Fun', education: '📚 Education', canvas: '🎨 Canvas', others: '🗂️ Others' };
+                data.commands.forEach(cmd => { const cat = cmd.category || 'others'; if (!categories[cat]) categories[cat] = []; categories[cat].push(cmd); });
+                let html = '<div class="commands-container">';
+                for (const [cat, cmds] of Object.entries(categories)) {
+                    html += `<div class="commands-category"><div class="category-header"><i class="fas fa-folder"></i> ${categoryNames[cat] || cat.toUpperCase()}</div><div class="commands-grid">`;
+                    cmds.forEach(cmd => {
+                        const cooldownBadge = cmd.cooldown > 0 ? `<div class="command-cooldown"><i class="fas fa-hourglass-half"></i> Cooldown: ${cmd.cooldown}s</div>` : '';
+                        html += `<div class="command-item"><div class="command-name"><i class="fas fa-hashtag"></i> ${escapeHtml(cmd.name)}</div><div class="command-usage"><i class="fas fa-code"></i> ${escapeHtml(cmd.usage)}</div>${cooldownBadge}</div>`;
+                    });
+                    html += `</div></div>`;
+                }
+                html += `</div>`;
+                document.getElementById('commandsList').innerHTML = html;
+            } catch (error) { console.error('Failed to load commands:', error); document.getElementById('commandsList').innerHTML = '<div class="empty-sessions">Failed to load commands</div>'; }
         }
 
         // Connect Form
         document.getElementById('connectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            if (!agreeCheckbox.checked) {
-                showMessage('Please agree to the Privacy Policy and Terms', 'error');
-                return;
-            }
-            
+            if (!agreeCheckbox.checked) { showMessage('Please agree to the Privacy Policy and Terms', 'error'); return; }
             const userName = document.getElementById('userName').value;
             const pageName = document.getElementById('pageName').value;
             const pageToken = document.getElementById('pageToken').value;
-            
-            if (!pageToken) {
-                showMessage('Please enter a page token', 'error');
-                return;
-            }
-            
+            if (!pageToken) { showMessage('Please enter a page token', 'error'); return; }
             showMessage('<i class="fas fa-spinner fa-spin"></i> Connecting page...', 'info');
             connectBtn.disabled = true;
-            
             try {
-                const response = await fetch(`${API_BASE}/api/connect`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName, pageName, pageToken })
-                });
+                const response = await fetch(`${API_BASE}/api/connect`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName, pageName, pageToken }) });
                 const data = await response.json();
-                
                 if (data.success) {
                     showMessage(`✅ ${data.message}`, 'success');
                     document.getElementById('pageToken').value = '';
                     document.getElementById('userName').value = '';
                     document.getElementById('pageName').value = '';
                     loadSessions();
-                    
-                    // Switch to sessions tab
                     document.querySelector('.menu-item[data-section="sessions"]').click();
-                } else {
-                    showMessage(`❌ ${data.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`❌ Connection failed: ${error.message}`, 'error');
-            } finally {
-                connectBtn.disabled = false;
-            }
+                } else { showMessage(`❌ ${data.error}`, 'error'); }
+            } catch (error) { showMessage(`❌ Connection failed: ${error.message}`, 'error'); }
+            finally { connectBtn.disabled = false; }
         });
 
-        function showMessage(msg, type) {
-            const msgDiv = document.getElementById('message');
-            msgDiv.innerHTML = msg;
-            msgDiv.className = `message ${type}`;
-            setTimeout(() => msgDiv.style.display = 'none', 5000);
-        }
-
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            copyToClipboardText(text);
-        }
-
-        function copyToClipboardText(text) {
-            navigator.clipboard.writeText(text);
-            showMessage('📋 Copied to clipboard!', 'success');
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        function showMessage(msg, type) { const msgDiv = document.getElementById('message'); msgDiv.innerHTML = msg; msgDiv.className = `message ${type}`; setTimeout(() => msgDiv.style.display = 'none', 5000); }
+        function copyToClipboard(elementId) { const text = document.getElementById(elementId).textContent; copyToClipboardText(text); }
+        function copyToClipboardText(text) { navigator.clipboard.writeText(text); showMessage('📋 Copied to clipboard!', 'success'); }
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
         // Privacy Modal
         let privacyAccepted = localStorage.getItem('privacyAccepted');
-        if (!privacyAccepted) {
-            setTimeout(() => {
-                document.getElementById('privacyModal').style.display = 'flex';
-            }, 500);
-        }
-
-        function acceptPrivacy() {
-            localStorage.setItem('privacyAccepted', 'true');
-            document.getElementById('privacyModal').style.display = 'none';
-            showMessage('🎉 Welcome to AutoPageBot!', 'success');
-        }
-
-        function declinePrivacy() {
-            localStorage.setItem('privacyAccepted', 'false');
-            document.getElementById('privacyModal').style.display = 'none';
-            showMessage('You must accept the Privacy Policy to connect pages.', 'error');
-        }
-
-        function showPrivacy() {
-            document.getElementById('privacyModal').style.display = 'flex';
-        }
+        if (!privacyAccepted) { setTimeout(() => { document.getElementById('privacyModal').style.display = 'flex'; }, 500); }
+        function acceptPrivacy() { localStorage.setItem('privacyAccepted', 'true'); document.getElementById('privacyModal').style.display = 'none'; showMessage('🎉 Welcome to AutoPageBot!', 'success'); }
+        function declinePrivacy() { localStorage.setItem('privacyAccepted', 'false'); document.getElementById('privacyModal').style.display = 'none'; showMessage('You must accept the Privacy Policy to connect pages.', 'error'); }
+        function showPrivacy() { document.getElementById('privacyModal').style.display = 'flex'; }
 
         // Initial load
+        loadServerInfo();
+        startServerUptimeUpdater();
         loadSessions();
+        loadCommands();
         setInterval(loadSessions, 30000);
-        updateServerUptime();
 
-        // Make functions global
         window.toggleTheme = toggleTheme;
         window.toggleMobileMenu = toggleMobileMenu;
         window.copyToClipboard = copyToClipboard;
