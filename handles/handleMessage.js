@@ -3,14 +3,14 @@ const path = require('path');
 const { sendMessage } = require('./sendMessage');
 const tokenManager = require('./tokenManager');
 
+// Load command modules
 const commands = new Map();
-const imageCache = new Map();
 const lastImageByUser = new Map();
 const lastVideoByUser = new Map();
 const prefix = '-';
-const CACHE_TTL = 10 * 60 * 1000; 
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-// Load commands on startup
+// Load commands with support for multiple command names
 const loadCommands = () => {
     const commandsDir = path.join(__dirname, '../commands');
 
@@ -45,16 +45,21 @@ loadCommands();
 // Clear image cache periodically
 setInterval(() => {
     const now = Date.now();
-    for (const [key, value] of imageCache) {
+    for (const [key, value] of lastImageByUser) {
         if (now - value.timestamp > CACHE_TTL) {
-            imageCache.delete(key);
+            lastImageByUser.delete(key);
+        }
+    }
+    for (const [key, value] of lastVideoByUser) {
+        if (now - value.timestamp > CACHE_TTL) {
+            lastVideoByUser.delete(key);
         }
     }
 }, CACHE_TTL);
 
-const handleMessage = async (event, pageAccessToken, pageId) => {
+async function handleMessage(event, pageAccessToken, pageId) {
     const senderId = event?.sender?.id;
-    if (!senderId) return;
+    if (!senderId) return console.error('Invalid event object');
 
     // Increment message counter
     await tokenManager.incrementMessages();
@@ -69,39 +74,41 @@ const handleMessage = async (event, pageAccessToken, pageId) => {
     const imageUrl = imageAttachment?.payload?.url;
     const videoUrl = videoAttachment?.payload?.url;
 
-    // Save to cache
+    // Save to cache with timestamps
     if (imageUrl) {
-        imageCache.set(senderId, {
+        lastImageByUser.set(senderId, {
             url: imageUrl,
             timestamp: Date.now()
         });
-        lastImageByUser.set(senderId, imageUrl);
     }
-    if (videoUrl) lastVideoByUser.set(senderId, videoUrl);
+    if (videoUrl) {
+        lastVideoByUser.set(senderId, {
+            url: videoUrl,
+            timestamp: Date.now()
+        });
+    }
 
     // Get latest media (prioritize current, fallback to previous)
-    const lastImage = imageUrl || lastImageByUser.get(senderId);
-    const lastVideo = videoUrl || lastVideoByUser.get(senderId);
+    const cachedImage = lastImageByUser.get(senderId);
+    const cachedVideo = lastVideoByUser.get(senderId);
+    const lastImage = imageUrl || cachedImage?.url;
+    const lastVideo = videoUrl || cachedVideo?.url;
     const mediaToUpload = lastImage || lastVideo;
 
-    if (!messageText) return;
+    if (!messageText) return console.log('Received message without text');
 
-    const isCommand = messageText.startsWith(prefix);
-    const [commandName, ...args] = isCommand 
+    const [rawCommand, ...args] = messageText.startsWith(prefix)
         ? messageText.slice(prefix.length).split(' ')
         : messageText.split(' ');
 
-    const normalizedCommand = commandName.toLowerCase();
-    
-    // Media commands list
-    const mediaCommands = ['remini', 'gem', 'imgbb', '4k', 'restore', 'ocr', 'removebg', 'gemini', 'imgur', 'zombie', 'blur', 'vampire'];
+    const commandKey = rawCommand.toLowerCase();
+    const mediaCommands = ['remini', 'gem', 'imgbb', '4k', 'restore', 'ocr', 'removebg', 'gemini', 'imgur', 'zombie', 'blur', 'vampire', 'catmoe'];
 
     try {
-        console.log(`Received command: ${normalizedCommand}, args: ${args.join(' ')}`);
+        console.log(`📝 Received command: ${commandKey}, args: ${args.join(' ')} for page ${pageId} from user ${senderId}`);
 
-        // Handle media commands
-        if (mediaCommands.includes(normalizedCommand)) {
-            switch (normalizedCommand) {
+        if (mediaCommands.includes(commandKey)) {
+            switch (commandKey) {
                 case 'remini':
                 case '4k':
                 case 'restore':
@@ -110,96 +117,93 @@ const handleMessage = async (event, pageAccessToken, pageId) => {
                 case 'blur':
                 case 'vampire':
                     if (lastImage) {
-                        await commands.get(normalizedCommand).execute(senderId, [], pageAccessToken, lastImage);
+                        await commands.get(commandKey).execute(senderId, [], pageAccessToken, lastImage);
                         lastImageByUser.delete(senderId);
                     } else {
                         await sendMessage(senderId, {
-                            text: `❌ Please send an image first, then type "${normalizedCommand}".`
+                            text: `❌ Please send an image first, then type "${commandKey}".`
                         }, pageAccessToken);
                     }
                     break;
 
                 case 'gemini':
-                    if (commands.has('gemini')) {
-                        await commands.get('gemini').execute(senderId, args, pageAccessToken, event, lastImage);
-                        lastImageByUser.delete(senderId);
-                    } else {
-                        await sendMessage(senderId, { text: '❌ Gemini command not found.' }, pageAccessToken);
-                    }
+                    await commands.get('gemini').execute(senderId, args, pageAccessToken, event, lastImage);
+                    lastImageByUser.delete(senderId);
                     break;
 
                 case 'gem':
-                    if (commands.has('gem')) {
-                        await commands.get('gem').execute(senderId, args, pageAccessToken, event, lastImage);
-                        lastImageByUser.delete(senderId);
-                    } else {
-                        await sendMessage(senderId, { text: '❌ Gem command not found.' }, pageAccessToken);
-                    }
+                    await commands.get('gem').execute(senderId, args, pageAccessToken, event, lastImage);
+                    lastImageByUser.delete(senderId);
                     break;
 
                 case 'imgbb':
-                    if (mediaToUpload && commands.has('imgbb')) {
+                    if (mediaToUpload) {
                         await commands.get('imgbb').execute(senderId, [], pageAccessToken, mediaToUpload);
                         lastImageByUser.delete(senderId);
                         lastVideoByUser.delete(senderId);
-                    } else if (!commands.has('imgbb')) {
-                        await sendMessage(senderId, { text: '❌ ImgBB command not found.' }, pageAccessToken);
                     } else {
                         await sendMessage(senderId, {
                             text: '❌ Please send an image or video first, then type "imgbb".'
                         }, pageAccessToken);
                     }
                     break;
-                    
+
                 case 'imgur':
-                    if (mediaToUpload && commands.has('imgur')) {
+                    if (mediaToUpload) {
                         await commands.get('imgur').execute(senderId, [], pageAccessToken, mediaToUpload);
                         lastImageByUser.delete(senderId);
                         lastVideoByUser.delete(senderId);
-                    } else if (!commands.has('imgur')) {
-                        await sendMessage(senderId, { text: '❌ ImgUr command not found.' }, pageAccessToken);
                     } else {
                         await sendMessage(senderId, {
                             text: '❌ Please send an image or video first, then type "imgur".'
                         }, pageAccessToken);
                     }
                     break;
-                    
+
                 case 'ocr':
-                    if (mediaToUpload && commands.has('ocr')) {
+                    if (mediaToUpload) {
                         await commands.get('ocr').execute(senderId, [], pageAccessToken, mediaToUpload);
                         lastImageByUser.delete(senderId);
                         lastVideoByUser.delete(senderId);
-                    } else if (!commands.has('ocr')) {
-                        await sendMessage(senderId, { text: '❌ OCR command not found.' }, pageAccessToken);
                     } else {
                         await sendMessage(senderId, {
                             text: '❌ Please send an image first, then type "ocr".'
                         }, pageAccessToken);
                     }
                     break;
-                    
-                default:
-                    await sendMessage(senderId, { text: '❌ Unknown media command.' }, pageAccessToken);
+
+                case 'catmoe':
+                    if (mediaToUpload) {
+                        await commands.get('catmoe').execute(senderId, [], pageAccessToken, mediaToUpload);
+                        lastImageByUser.delete(senderId);
+                        lastVideoByUser.delete(senderId);
+                    } else {
+                        await sendMessage(senderId, {
+                            text: '❌ Please send an image first, then type "catmoe".'
+                        }, pageAccessToken);
+                    }
+                    break;
             }
             return;
         }
 
         // Normal command
-        const command = commands.get(normalizedCommand);
-
-        if (command) {
-            console.log(`📝 Executing command: ${normalizedCommand} for page ${pageId} from user ${senderId}`);
-            await command.execute(senderId, args, pageAccessToken, event, sendMessage, imageCache);
+        if (commands.has(commandKey)) {
+            await commands.get(commandKey).execute(senderId, args, pageAccessToken, event, sendMessage, lastImageByUser);
         } else if (commands.has('ai')) {
-            await commands.get('ai').execute(senderId, [messageText], pageAccessToken, event, sendMessage, imageCache);
+            await commands.get('ai').execute(senderId, [messageText], pageAccessToken, event, sendMessage, lastImageByUser);
         } else {
-            await sendMessage(senderId, { text: '🤖 Unknown command. Type "help" for available commands.' }, pageAccessToken);
+            await sendMessage(senderId, {
+                text: '❓ Unknown command and AI fallback is unavailable.'
+            }, pageAccessToken);
         }
+
     } catch (error) {
-        console.error('Command execution error:', error.message);
-        await sendMessage(senderId, { text: error.message || '❌ Command execution failed. Please try again later.' }, pageAccessToken);
+        console.error(`Error executing command "${commandKey}":`, error.message);
+        await sendMessage(senderId, {
+            text: error.message || `❌ There was an error executing "${commandKey}".`
+        }, pageAccessToken);
     }
-};
+}
 
 module.exports = { handleMessage };
