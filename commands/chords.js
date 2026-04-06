@@ -13,7 +13,7 @@ function splitMessage(text) {
 }
 
 module.exports = {
-    name: ['chord'],
+    name: ['chords'],
     usage: 'chords [song title]',
     version: '1.0.0',
     author: 'AutoPageBot',
