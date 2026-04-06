@@ -32,7 +32,7 @@ function splitMessage(text) {
 }
 
 module.exports = {
-    name: ['copilot', 'ai', 'gpt'],
+    name: ['copilot'],
     usage: 'copilot [question]',
     version: '1.0.0',
     author: 'AutoPagebot',
