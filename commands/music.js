@@ -1,17 +1,17 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
 const fs = require('fs').promises;
 const { createReadStream, unlinkSync } = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 const { sendMessage } = require('../handles/sendMessage');
 
-// Kohi Download API
-const DOWNLOAD_API = "https://api-library-kohi.onrender.com/api/alldl";
+// API endpoints
+const SEARCH_API = "https://api.jonell-hutchin-api-ccprojects.kozow.com/api/ytsearch";
+const DOWNLOAD_API = "https://api.jonell-hutchin-api-ccprojects.kozow.com/api/music";
 
 module.exports = {
-    name: ['spotify', 'sp', 'sptfy', 'spotifydl', 'spdl'],
-    usage: 'spotify [song name or Spotify URL]',
+    name: ['music', 'song'],
+    usage: 'music [song name]',
     version: '1.0.0',
     author: 'AutoPageBot',
     category: 'music',
@@ -20,134 +20,79 @@ module.exports = {
     async execute(senderId, args, pageAccessToken) {
         if (!args.length) {
             return sendMessage(senderId, {
-                text: `🎵 𝗦𝗽𝗼𝘁𝗶𝗳𝘆 𝗠𝘂𝘀𝗶𝗰 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗿
+                text: `🎵 𝗠𝘂𝘀𝗶𝗰 𝗔𝘂𝗱𝗶𝗼 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗿
 
-📝 𝗨𝘀𝗮𝗴𝗲: spotify [song name or Spotify URL]
+📝 𝗨𝘀𝗮𝗴𝗲: music [song name]
 
 ✨ 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
-• spotify Wake Me Up When September Ends
-• spotify https://open.spotify.com/track/1P2Yy7790QFzV5tbOd4cBN
+• music Kumpas fingerstyle
+• music Shape of You
+• music Blinding Lights
 
 🎵 𝗙𝗲𝗮𝘁𝘂𝗿𝗲𝘀:
-• Search Spotify songs
-• Download as audio
-• High quality MP3
+• Search YouTube songs
+• Download as MP3 audio
+• High quality audio
+• Fast response
 
 💡 Tip: Use exact song name for better results!`
             }, pageAccessToken);
         }
 
         const query = args.join(' ');
-        
-        // Check if input is a Spotify URL
-        const isUrl = query.includes('spotify.com/track/') || query.includes('open.spotify.com');
-        
-        if (isUrl) {
-            await downloadFromUrl(senderId, query, pageAccessToken);
-        } else {
-            await searchAndDownload(senderId, query, pageAccessToken);
+
+        // Send loading message
+        await sendMessage(senderId, { 
+            text: `🔍 Searching for "${query}"...` 
+        }, pageAccessToken);
+
+        try {
+            // Search for video
+            const searchRes = await axios.get(SEARCH_API, { 
+                params: { title: query },
+                timeout: 15000
+            });
+            
+            const results = searchRes.data?.results;
+            
+            if (!results || results.length === 0) {
+                return sendMessage(senderId, { 
+                    text: `❌ No results found for "${query}".\n\nPlease try a different song name.` 
+                }, pageAccessToken);
+            }
+
+            // Get the first result
+            const video = results[0];
+            const videoUrl = video.url;
+            const title = video.title;
+            const duration = video.duration;
+            const author = video.author;
+            const thumbnail = video.thumbnail;
+
+            // Send song info
+            await sendMessage(senderId, {
+                text: `🎵 𝗦𝗼𝗻𝗴 𝗙𝗼𝘂𝗻𝗱!\n\n📌 Title: ${title}\n👤 Artist: ${author}\n⏱️ Duration: ${duration}\n\n⬇️ Converting to audio...`
+            }, pageAccessToken);
+
+            await downloadAudio(senderId, videoUrl, pageAccessToken, title, author);
+
+        } catch (error) {
+            console.error('Search Error:', error.message);
+            await sendMessage(senderId, { 
+                text: `❌ Failed to search for "${query}".\n\nPlease try again later.` 
+            }, pageAccessToken);
         }
     }
 };
 
-async function searchAndDownload(senderId, query, pageAccessToken) {
-    try {
-        // Send loading message
-        await sendMessage(senderId, { 
-            text: `🔍 Searching Spotify for "${query}"...` 
-        }, pageAccessToken);
-
-        // Scrape Spotify search results
-        const searchUrl = `https://open.spotify.com/search/${encodeURIComponent(query)}/tracks`;
-        
-        const response = await axios.get(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Referer': 'https://open.spotify.com/',
-                'DNT': '1'
-            },
-            timeout: 15000
-        });
-
-        const html = response.data;
-        const $ = cheerio.load(html);
-        
-        // Extract track URLs from the page
-        const trackUrls = [];
-        
-        // Find all links that look like Spotify track URLs
-        $('a[href^="/track/"]').each((i, elem) => {
-            const href = $(elem).attr('href');
-            if (href && href.startsWith('/track/')) {
-                const trackUrl = `https://open.spotify.com${href}`;
-                if (!trackUrls.includes(trackUrl)) {
-                    trackUrls.push(trackUrl);
-                }
-            }
-        });
-
-        // Also look for track links in data attributes
-        $('[data-testid="track-link"]').each((i, elem) => {
-            const href = $(elem).attr('href');
-            if (href && href.includes('/track/')) {
-                const trackUrl = href.startsWith('http') ? href : `https://open.spotify.com${href}`;
-                if (!trackUrls.includes(trackUrl)) {
-                    trackUrls.push(trackUrl);
-                }
-            }
-        });
-
-        if (trackUrls.length === 0) {
-            return sendMessage(senderId, {
-                text: `❌ No results found for "${query}".\n\nPlease try a different song name or use a Spotify URL.`
-            }, pageAccessToken);
-        }
-
-        // Get the first track URL
-        const firstTrackUrl = trackUrls[0];
-        
-        // Get track title for display
-        let trackTitle = query;
-        $('a[href^="/track/"]').each((i, elem) => {
-            if (i === 0) {
-                const titleElem = $(elem).find('div[dir="auto"]');
-                if (titleElem.length) {
-                    trackTitle = titleElem.first().text().trim() || query;
-                }
-            }
-        });
-
-        await sendMessage(senderId, {
-            text: `🎵 Found: ${trackTitle}\n\n⬇️ Downloading audio...`
-        }, pageAccessToken);
-
-        await downloadFromUrl(senderId, firstTrackUrl, pageAccessToken, trackTitle);
-
-    } catch (error) {
-        console.error('Search Error:', error.message);
-        
-        // Fallback: Use direct search with known track
-        await sendMessage(senderId, {
-            text: `❌ Failed to search for "${query}".\n\nPlease try:\n• Use a Spotify URL directly\n• Check the song name spelling\n• Try: spotify https://open.spotify.com/track/...`
-        }, pageAccessToken);
-    }
-}
-
-async function downloadFromUrl(senderId, url, pageAccessToken, title = null) {
+async function downloadAudio(senderId, url, pageAccessToken, title, author) {
     const tempDir = path.join(__dirname, '../temp');
-    const tempFile = path.join(tempDir, `spotify_${Date.now()}.mp3`);
+    const tempFile = path.join(tempDir, `music_${Date.now()}.mp3`);
     
     await fs.mkdir(tempDir, { recursive: true });
 
     try {
-        // Send loading message
-        await sendMessage(senderId, { 
-            text: `📥 Fetching audio from Spotify...` 
-        }, pageAccessToken);
-
-        // Get download URL from Kohi API
+        // Get download URL from API
         const downloadRes = await axios.get(DOWNLOAD_API, {
             params: { url: url },
             timeout: 30000
@@ -155,19 +100,13 @@ async function downloadFromUrl(senderId, url, pageAccessToken, title = null) {
 
         const data = downloadRes.data;
         
-        if (!data || !data.status || !data.data || !data.data.videoUrl) {
+        if (!data || !data.data || !data.data.link) {
             throw new Error('Failed to get download URL');
         }
 
-        const audioUrl = data.data.videoUrl;
-        const songTitle = title || data.data.title || 'Spotify Track';
-        const artist = data.data.artist || 'Unknown Artist';
+        const audioUrl = data.data.link;
         const duration = data.data.duration || 'Unknown';
-
-        // Send song info
-        await sendMessage(senderId, {
-            text: `🎵 Title: ${songTitle}\n👤 Artist: ${artist}\n⏱️ Duration: ${duration}s\n\n⬇️ Downloading audio...`
-        }, pageAccessToken);
+        const fileSize = data.data.filesize ? (data.data.filesize / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown';
 
         // Download audio
         const audioResponse = await axios.get(audioUrl, { 
@@ -213,7 +152,7 @@ async function downloadFromUrl(senderId, url, pageAccessToken, title = null) {
         });
         
         await sendMessage(senderId, {
-            text: `✅ Audio ready!\n\n🎵 ${songTitle}\n👤 ${artist}\n⏱️ ${duration}s\n📅 ${phTime}\n\n🎧 Enjoy!`
+            text: `✅ Audio ready!\n\n🎵 ${title}\n👤 ${author}\n⏱️ Duration: ${duration}\n📦 Size: ${fileSize}\n📅 ${phTime}\n\n🎧 Enjoy listening!`
         }, pageAccessToken);
         
         // Cleanup
@@ -226,7 +165,7 @@ async function downloadFromUrl(senderId, url, pageAccessToken, title = null) {
         try { unlinkSync(tempFile); } catch(e) {}
         
         await sendMessage(senderId, {
-            text: `❌ Failed to download audio.\n\n📝 Tips:\n• Check the Spotify URL\n• Try a different song\n• Make sure the track is available\n\n💡 Example: spotify https://open.spotify.com/track/...`
+            text: `❌ Failed to download audio.\n\n📝 Tips:\n• Check the song name\n• Try a different song\n• Make sure the video exists\n\n💡 Example: music Kumpas fingerstyle`
         }, pageAccessToken);
     }
 }
