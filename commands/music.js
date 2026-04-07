@@ -10,7 +10,7 @@ const SEARCH_API = "https://api.jonell-hutchin-api-ccprojects.kozow.com/api/ytse
 const DOWNLOAD_API = "https://api.jonell-hutchin-api-ccprojects.kozow.com/api/music";
 
 module.exports = {
-    name: ['music', 'song'],
+    name: ['music', 'song', 'audio', 'mp3', 'play', 'ytmp3'],
     usage: 'music [song name]',
     version: '1.0.0',
     author: 'AutoPageBot',
@@ -68,13 +68,15 @@ module.exports = {
             const duration = video.duration;
             const author = video.author;
             const thumbnail = video.thumbnail;
+            const views = video.views;
+            const publishedAgo = video.publishedAgo;
 
             // Send song info
             await sendMessage(senderId, {
-                text: `🎵 𝗦𝗼𝗻𝗴 𝗙𝗼𝘂𝗻𝗱!\n\n📌 Title: ${title}\n👤 Artist: ${author}\n⏱️ Duration: ${duration}\n\n⬇️ Converting to audio...`
+                text: `🎵 𝗦𝗼𝗻𝗴 𝗙𝗼𝘂𝗻𝗱!\n\n📌 Title: ${title}\n👤 Artist: ${author}\n⏱️ Duration: ${duration}\n👁️ Views: ${views.toLocaleString()}\n📅 Published: ${publishedAgo}\n\n⬇️ Converting to audio...`
             }, pageAccessToken);
 
-            await downloadAudio(senderId, videoUrl, pageAccessToken, title, author);
+            await downloadAudio(senderId, videoUrl, pageAccessToken, title, author, duration);
 
         } catch (error) {
             console.error('Search Error:', error.message);
@@ -85,7 +87,7 @@ module.exports = {
     }
 };
 
-async function downloadAudio(senderId, url, pageAccessToken, title, author) {
+async function downloadAudio(senderId, url, pageAccessToken, title, author, duration) {
     const tempDir = path.join(__dirname, '../temp');
     const tempFile = path.join(tempDir, `music_${Date.now()}.mp3`);
     
@@ -98,15 +100,30 @@ async function downloadAudio(senderId, url, pageAccessToken, title, author) {
             timeout: 30000
         });
 
-        const data = downloadRes.data;
+        const responseData = downloadRes.data;
         
-        if (!data || !data.data || !data.data.link) {
-            throw new Error('Failed to get download URL');
+        // Check if download was successful
+        if (!responseData || !responseData.data || responseData.data.status !== 'ok') {
+            throw new Error(responseData?.data?.msg || 'Failed to get download URL');
         }
 
-        const audioUrl = data.data.link;
-        const duration = data.data.duration || 'Unknown';
-        const fileSize = data.data.filesize ? (data.data.filesize / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown';
+        const audioUrl = responseData.data.link;
+        const fileSizeBytes = responseData.data.filesize;
+        const fileSizeMB = (fileSizeBytes / 1024 / 1024).toFixed(2);
+        const durationSec = responseData.data.duration;
+        const progress = responseData.data.progress;
+
+        // Format duration
+        const formatDuration = (sec) => {
+            const minutes = Math.floor(sec / 60);
+            const seconds = Math.floor(sec % 60);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        };
+
+        // Send downloading message
+        await sendMessage(senderId, {
+            text: `📥 Downloading audio...\n\n🎵 ${title}\n📦 Size: ${fileSizeMB} MB\n⏱️ Duration: ${formatDuration(durationSec)}`
+        }, pageAccessToken);
 
         // Download audio
         const audioResponse = await axios.get(audioUrl, { 
@@ -152,7 +169,20 @@ async function downloadAudio(senderId, url, pageAccessToken, title, author) {
         });
         
         await sendMessage(senderId, {
-            text: `✅ Audio ready!\n\n🎵 ${title}\n👤 ${author}\n⏱️ Duration: ${duration}\n📦 Size: ${fileSize}\n📅 ${phTime}\n\n🎧 Enjoy listening!`
+            text: `✅ 𝗔𝘂𝗱𝗶𝗼 𝗿𝗲𝗮𝗱𝘆!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎵 𝗧𝗶𝘁𝗹𝗲: ${title}
+👤 𝗔𝗿𝘁𝗶𝘀𝘁: ${author}
+⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: ${duration || formatDuration(durationSec)}
+📦 𝗦𝗶𝘇𝗲: ${fileSizeMB} MB
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 ${phTime}
+
+🎧 Enjoy listening!`
         }, pageAccessToken);
         
         // Cleanup
