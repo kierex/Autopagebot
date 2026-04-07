@@ -1,152 +1,70 @@
-const axios = require('axios');
-const { sendMessage } = require('../handles/sendMessage');
+const axios = require("axios");
+const { sendMessage } = require("../handles/sendMessage");
 
-const SEARCH_URL = 'https://api.jonell-hutchin-api-ccprojects.kozow.com/api/ytsearch';
-const DOWNLOAD_URL = 'https://api.jonell-hutchin-api-ccprojects.kozow.com/api/music';
+const SEARCH_URL = "https://api.jonell-hutchin-api-ccprojects.kozow.com/api/ytsearch";
+const DOWNLOAD_URL = "https://api-library-kohi.onrender.com/api/alldl";
 
 module.exports = {
-    name: ['ytmusic', 'ytm', 'musicdl', 'ytaudio'],
-    usage: 'ytmusic [song name]',
-    version: '1.0.0',
-    author: 'Ry',
-    category: 'music',
-    cooldown: 10,
+  name: "music",
+  description: "Search and download YouTube videos.",
+  usage: "ytvideo <video name>",
+  category: 'search',
+  author: "Ry",
 
-    async execute(senderId, args, pageAccessToken) {
-        if (!args.length) {
-            return sendMessage(senderId, { 
-                text: `🎵 𝗬𝗧 𝗠𝘂𝘀𝗶𝗰 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗿
-
-📝 𝗨𝘀𝗮𝗴𝗲: ytmusic [song name]
-
-✨ 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
-• ytmusic Kumpas fingerstyle
-• ytmusic Shape of You
-• ytmusic Blinding Lights
-
-🎵 𝗙𝗲𝗮𝘁𝘂𝗿𝗲𝘀:
-• Search YouTube songs
-• Download as MP3 audio
-• High quality audio
-
-💡 Tip: Use exact song name for better results!` 
-            }, pageAccessToken);
-        }
-
-        await searchYouTubeMusic(senderId, args.join(' '), pageAccessToken);
+  async execute(senderId, args, pageAccessToken) {
+    if (!args.length) {
+      return sendMessage(senderId, { text: "❌ 𝖯𝗅𝖾𝖺𝗌𝖾 𝗉𝗋𝗈𝗏𝗂𝖽𝖾 𝖺 𝗌𝖾𝖺𝗋𝖼𝗁 𝗊𝗎𝖾𝗋𝗒.." }, pageAccessToken);
     }
+
+    const query = args.join(" ");
+    await searchAndDownload(senderId, query, pageAccessToken);
+  },
 };
 
-const searchYouTubeMusic = async (senderId, songName, pageAccessToken) => {
-    try {
-        // Search for the song
-        const searchRes = await axios.get(SEARCH_URL, {
-            params: {
-                title: songName
-            },
-            timeout: 15000
-        });
+const searchAndDownload = async (senderId, query, pageAccessToken) => {
+  try {
+    // 🔍 Step 1: Search video
+    const searchRes = await axios.get(SEARCH_URL, { params: { title: query } });
+    const video = searchRes.data?.results?.[0];
 
-        const results = searchRes.data?.results;
-        if (!results || results.length === 0) {
-            return sendMessage(senderId, { text: '❌ No song found. Please try a different name.' }, pageAccessToken);
-        }
-
-        // Get the first result
-        const item = results[0];
-        const { title, url, thumbnail, duration, author, views } = item;
-
-        // Send loading message
-        await sendMessage(senderId, { 
-            text: `🎵 Found: ${title}\n\n⬇️ Converting to audio...` 
-        }, pageAccessToken);
-
-        // Download the audio
-        const downloadRes = await axios.get(DOWNLOAD_URL, {
-            params: {
-                url: url
-            },
-            timeout: 30000
-        });
-
-        const downloadData = downloadRes.data?.data;
-        if (!downloadData || downloadData.status !== 'ok') {
-            return sendMessage(senderId, { text: '❌ Failed to get download link.' }, pageAccessToken);
-        }
-
-        const { link: download_url, filesize, duration: audioDuration } = downloadData;
-        
-        // Format filesize
-        const formattedSize = filesize ? `${(filesize / 1024 / 1024).toFixed(2)} MB` : 'Unknown';
-        
-        // Send template message
-        await sendMessage(senderId, {
-            attachment: {
-                type: 'template',
-                payload: {
-                    template_type: 'generic',
-                    elements: [{
-                        title: `🎵 ${title.substring(0, 80)}`,
-                        image_url: thumbnail,
-                        subtitle: `🎤 ${author} | ⏱️ ${duration || formatDuration(audioDuration)} | 👁️ ${formatViews(views)} | 💾 ${formattedSize}`,
-                        buttons: [
-                            {
-                                type: 'web_url',
-                                url: url,
-                                title: '🎬 Watch on YouTube'
-                            },
-                            {
-                                type: 'web_url',
-                                url: download_url,
-                                title: '⬇️ Download MP3'
-                            }
-                        ]
-                    }]
-                }
-            }
-        }, pageAccessToken);
-
-        // Send audio preview
-        await sendMessage(senderId, {
-            attachment: {
-                type: 'audio',
-                payload: {
-                    url: download_url,
-                    is_reusable: true
-                }
-            }
-        }, pageAccessToken);
-
-        // Send success message
-        const phTime = new Date().toLocaleString('en-PH', {
-            timeZone: 'Asia/Manila',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-
-        await sendMessage(senderId, {
-            text: `✅ Audio ready!\n\n🎵 ${title}\n🎤 ${author}\n📦 ${formattedSize}\n📅 ${phTime}\n\n🎧 Enjoy!`
-        }, pageAccessToken);
-
-    } catch (error) {
-        console.error('Error fetching YouTube music:', error.message);
-        sendMessage(senderId, { text: '❌ Unexpected error occurred. Please try again later.' }, pageAccessToken);
+    if (!video) {
+      return sendMessage(senderId, { text: "⚠️ No video found for your search." }, pageAccessToken);
     }
+
+    const { title, author, duration, views, publishedAgo, url } = video;
+
+    // ⬇️ Step 2: Get download info
+    const dlRes = await axios.get(DOWNLOAD_URL, { params: { url: url } });
+    const data = dlRes.data;
+
+    if (!data || !data.status || !data.data?.videoUrl) {
+      return sendMessage(senderId, { text: "⚠️ Download link not available." }, pageAccessToken);
+    }
+
+    const videoUrl = data.data.videoUrl;
+
+    // 🎥 Step 3: Send video with details
+    await sendMessage(
+      senderId,
+      {
+        text: `🎬 𝗧𝗶𝘁𝗹𝗲: ${title}\n👤 𝗔𝘂𝘁𝗵𝗼𝗿: ${author}\n⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: ${duration}\n👁️ 𝗩𝗶𝗲𝘄𝘀: ${views.toLocaleString()}\n📅 𝗨𝗽𝗹𝗼𝗮𝗱𝗲𝗱: ${publishedAgo}\n\n🎞️ Downloading video...`,
+      },
+      pageAccessToken
+    );
+
+    // 🎞️ Step 4: Send the actual video file
+    await sendMessage(
+      senderId,
+      {
+        attachment: {
+          type: "video",
+          payload: { url: videoUrl, is_reusable: true },
+        },
+      },
+      pageAccessToken
+    );
+  } catch (error) {
+    console.error("❌ YouTube command error:", error.response?.data || error.message);
+    sendMessage(senderId, { text: "⚠️ Error: Unable to fetch video." }, pageAccessToken);
+  }
 };
-
-// Helper function to format view count
-function formatViews(views) {
-    if (!views) return 'Unknown';
-    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
-    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
-    return views.toString();
-}
-
-// Helper function to format duration from seconds
-function formatDuration(seconds) {
-    if (!seconds) return 'Unknown';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
