@@ -54,7 +54,7 @@ module.exports = {
         if (message.toLowerCase() === 'reset' || message.toLowerCase() === 'clear') {
             memory.clearConversation(senderId);
             return sendMessage(senderId, {
-                text: '🧹 Conversation history cleared from memory/conversations.json!\n\n💬 Start a fresh conversation.'
+                text: '🧹 Conversation history cleared!\n\n💬 Start a fresh conversation.'
             }, pageAccessToken);
         }
 
@@ -69,7 +69,7 @@ module.exports = {
             });
 
             return sendMessage(senderId, {
-                text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀\n\n• Messages: ${stats.messageCount}\n• Created: ${created}\n• Last active: ${lastActive}\n• Storage: memory/conversations.json\n\n💡 Use "ai reset" to clear history`
+                text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀\n\n• Messages: ${stats.messageCount}\n• Created: ${created}\n• Last active: ${lastActive}\n\n💡 Use "ai reset" to clear history`
             }, pageAccessToken);
         }
 
@@ -78,10 +78,8 @@ module.exports = {
         let prompt = message;
 
         if (context) {
-            prompt = `Previous conversation:\n${context}\nUser: ${message}\nAssistant:`;
+            prompt = `Previous conversation:\n${context}\n\nUser: ${message}`;
         }
-
-        let aiResponse = null;
 
         try {
             const response = await axios.get('https://yin-api.vercel.app/ai/chatgptfree', {
@@ -92,31 +90,30 @@ module.exports = {
                 timeout: 30000
             });
 
+            // Extract only the answer from the response
             if (response.data && response.data.answer) {
-                aiResponse = response.data.answer;
-                console.log(`✅ AI response received in ${response.data.responseTime}`);
+                const aiResponse = response.data.answer;
+                
+                // Save to conversation memory
+                memory.addMessage(senderId, 'user', message);
+                memory.addMessage(senderId, 'assistant', aiResponse);
+
+                // Apply bold formatting
+                const formattedResponse = makeBold(aiResponse.trim());
+                
+                // Split and send response
+                const chunks = splitMessage(formattedResponse);
+                for (const chunk of chunks) {
+                    await sendMessage(senderId, { text: chunk }, pageAccessToken);
+                }
             } else {
-                throw new Error('Invalid response format');
+                throw new Error('No answer in response');
             }
         } catch (error) {
             console.error('AI Error:', error?.message);
             await sendMessage(senderId, {
                 text: '❌ Failed to get AI response. Please try again later.'
             }, pageAccessToken);
-            return;
-        }
-
-        // Save to conversation memory
-        memory.addMessage(senderId, 'user', message);
-        memory.addMessage(senderId, 'assistant', aiResponse);
-
-        aiResponse = aiResponse.trim();
-        aiResponse = makeBold(aiResponse);
-
-        const chunks = splitMessage(aiResponse);
-
-        for (let i = 0; i < chunks.length; i++) {
-            await sendMessage(senderId, { text: chunks[i] }, pageAccessToken);
         }
     }
 };
