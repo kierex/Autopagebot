@@ -9,6 +9,7 @@ const CATEGORY_MAP = {
   ai: '🤖 | 𝗔𝗶 𝗠𝗼𝗱𝗲𝗹𝘀',    
   canvas: '🎨 | 𝗖𝗮𝗻𝘃𝗮𝘀',
   music: '🎧 | 𝗠𝘂𝘀𝗶𝗰',    
+  downloader: '📥 | 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗲𝗿'
   images: '🖼️ | 𝗜𝗺𝗮𝗴𝗲𝘀',    
   search: '🔍 | 𝗦𝗲𝗮𝗿𝗰𝗵',
   tools: '⚒️ | 𝗧𝗼𝗼𝗹𝘀',    
@@ -18,7 +19,7 @@ const CATEGORY_MAP = {
   system: '⚙️ | 𝗕𝗼𝘁 𝗦𝘆𝘀𝘁𝗲𝗺'  
 };    
 
-const ALLOWED_CATEGORIES = ['ai', 'search', 'canvas', 'music', 'images', 'tools', 'fun', 'system', 'uploader'];    
+const ALLOWED_CATEGORIES = ['ai', 'downloader', 'search', 'canvas', 'music', 'images', 'tools', 'fun', 'system', 'uploader'];    
 
 module.exports = {    
   name: ['help', 'commands', 'menu'],        
