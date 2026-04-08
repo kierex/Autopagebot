@@ -2,15 +2,6 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// API Keys (Primary + Backups)
-const API_KEYS = [
-  'AIzaSyCr5uVmoBCR4N8sASTirK2d-F1lYzAxrSU',
-  '',
-  '',
-  '',
-  ''
-];
-
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
     let boldText = '';
@@ -107,7 +98,6 @@ module.exports = {
         const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n';
         const footer = '\n・────────────・';
 
-        
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
         let prompt = message;
@@ -119,34 +109,29 @@ module.exports = {
         let aiResponse = null;
         let lastError = null;
 
-        // Try each API key until one works
-        for (let i = 0; i < API_KEYS.length; i++) {
-            try {
-                const response = await axios.get('https://kryptonite-api-library.onrender.com/api/gemini-vision', {
-                    params: { 
-                        prompt: prompt,
-                        uid: senderId,
-                        imgUrl: '',
-                        apikey: API_KEYS[i]
-                    },
-                    timeout: 30000
-                });
+        try {
+            const response = await axios.get('https://kryptonite-api-library.onrender.com/api/chatgptfree', {
+                params: { 
+                    prompt: prompt,
+                    uid: senderId,
+                    model: 'chatgpt4'
+                },
+                timeout: 30000
+            });
 
-                if (response.data && response.data.status === true && response.data.response) {
-                    aiResponse = response.data.response;
-                    console.log(`✅ API key ${i + 1} worked`);
-                    break;
-                }
-            } catch (error) {
-                lastError = error;
-                console.log(`❌ API key ${i + 1} failed`);
+            if (response.data && response.data.response) {
+                aiResponse = response.data.response;
+                console.log(`✅ API request successful - Response time: ${response.data.responseTime}`);
             }
+        } catch (error) {
+            lastError = error;
+            console.log('❌ API request failed');
         }
 
         if (!aiResponse) {
             console.error('AI Error:', lastError?.message);
             await sendMessage(senderId, {
-                text: header + '❌ All API keys failed. Please try again later.\n\n💡 Tip: The server might be busy!' + footer
+                text: header + '❌ API request failed. Please try again later.\n\n💡 Tip: The server might be busy!' + footer
             }, pageAccessToken);
             return;
         }
