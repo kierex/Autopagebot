@@ -4,7 +4,7 @@ const memory = require('../utils/memoryManager');
 
 // API Keys (Primary + Backups)
 const API_KEYS = [
-  'AIzaSyAJOowEKOwpRhi-8b1yZmQiBgvrnuOe_lg',
+  'AIzaSyCr5uVmoBCR4N8sASTirK2d-F1lYzAxrSU',
   '',
   '',
   '',
