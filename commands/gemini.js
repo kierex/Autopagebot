@@ -65,7 +65,7 @@ module.exports = {
         // Image + Text mode using Krypton API
         const encodedPrompt = encodeURIComponent(finalPrompt);
         const encodedImageUrl = encodeURIComponent(finalImageUrl);
-        const apiUrl = `${GEMINI_API_URL}?prompt=${encodedPrompt}&uid=${senderId}&imgUrl=${encodedImageUrl}&apikey=AIzaSyAJOowEKOwpRhi-8b1yZmQiBgvrnuOe_lg`;
+        const apiUrl = `${GEMINI_API_URL}?prompt=${encodedPrompt}&uid=${senderId}&imgUrl=${encodedImageUrl}&apikey=AIzaSyCr5uVmoBCR4N8sASTirK2d-F1lYzAxrSU`;
         
         const response = await axios.get(apiUrl, {
           timeout: 60000 // 60 seconds timeout
