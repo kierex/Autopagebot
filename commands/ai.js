@@ -2,6 +2,15 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
+// API Keys (Primary + Backups)
+const API_KEYS = [
+  'AIzaSyAJOowEKOwpRhi-8b1yZmQiBgvrnuOe_lg',
+  '',
+  '',
+  '',
+  ''
+];
+
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
     let boldText = '';
@@ -46,7 +55,22 @@ module.exports = {
         if (!args.length) {
             const stats = memory.getStats(senderId);
             return sendMessage(senderId, { 
-                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜\n\n📝 Usage: ai [your question]\n\n✨ Examples:\n• ai Hello! My name is John\n• ai What's my name? (remembers context)\n• ai Tell me a joke\n\n🔄 Commands:\n• ai reset - Clear conversation history\n• ai stats - Show conversation stats\n\n📊 Session: ${stats.messageCount} messages\n\n💡 The AI remembers your conversation!`
+                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜
+
+📝 Usage: ai [your question]
+
+✨ Examples:
+• ai Hello! My name is John
+• ai What's my name? (remembers context)
+• ai Tell me a joke
+
+🔄 Commands:
+• ai reset - Clear conversation history
+• ai stats - Show conversation stats
+
+📊 Session: ${stats.messageCount} messages
+
+💡 The AI remembers your conversation!`
             }, pageAccessToken);
         }
 
@@ -54,7 +78,7 @@ module.exports = {
         if (message.toLowerCase() === 'reset' || message.toLowerCase() === 'clear') {
             memory.clearConversation(senderId);
             return sendMessage(senderId, {
-                text: '🧹 Conversation history cleared!\n\n💬 Start a fresh conversation.'
+                text: '🧹 Conversation history cleared from memory/conversations.json!\n\n💬 Start a fresh conversation.'
             }, pageAccessToken);
         }
 
@@ -69,51 +93,82 @@ module.exports = {
             });
 
             return sendMessage(senderId, {
-                text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀\n\n• Messages: ${stats.messageCount}\n• Created: ${created}\n• Last active: ${lastActive}\n\n💡 Use "ai reset" to clear history`
+                text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀
+
+• Messages: ${stats.messageCount}
+• Created: ${created}
+• Last active: ${lastActive}
+• Storage: memory/conversations.json
+
+💡 Use "ai reset" to clear history`
             }, pageAccessToken);
         }
 
+        const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n';
+        const footer = '\n・────────────・';
+
+        
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
         let prompt = message;
 
         if (context) {
-            prompt = `Previous conversation:\n${context}\n\nUser: ${message}`;
+            prompt = `Previous conversation:\n${context}\nUser: ${message}\nAssistant:`;
         }
 
-        try {
-            const response = await axios.get('https://yin-api.vercel.app/ai/chatgptfree', {
-                params: { 
-                    prompt: prompt,
-                    model: 'chatgpt4'
-                },
-                timeout: 30000
-            });
+        let aiResponse = null;
+        let lastError = null;
 
-            // Extract only the answer from the response
-            if (response.data && response.data.answer) {
-                const aiResponse = response.data.answer;
-                
-                // Save to conversation memory
-                memory.addMessage(senderId, 'user', message);
-                memory.addMessage(senderId, 'assistant', aiResponse);
+        // Try each API key until one works
+        for (let i = 0; i < API_KEYS.length; i++) {
+            try {
+                const response = await axios.get('https://kryptonite-api-library.onrender.com/api/gemini-vision', {
+                    params: { 
+                        prompt: prompt,
+                        uid: senderId,
+                        imgUrl: '',
+                        apikey: API_KEYS[i]
+                    },
+                    timeout: 30000
+                });
 
-                // Apply bold formatting
-                const formattedResponse = makeBold(aiResponse.trim());
-                
-                // Split and send response
-                const chunks = splitMessage(formattedResponse);
-                for (const chunk of chunks) {
-                    await sendMessage(senderId, { text: chunk }, pageAccessToken);
+                if (response.data && response.data.status === true && response.data.response) {
+                    aiResponse = response.data.response;
+                    console.log(`✅ API key ${i + 1} worked`);
+                    break;
                 }
-            } else {
-                throw new Error('No answer in response');
+            } catch (error) {
+                lastError = error;
+                console.log(`❌ API key ${i + 1} failed`);
             }
-        } catch (error) {
-            console.error('AI Error:', error?.message);
+        }
+
+        if (!aiResponse) {
+            console.error('AI Error:', lastError?.message);
             await sendMessage(senderId, {
-                text: '❌ Failed to get AI response. Please try again later.'
+                text: header + '❌ All API keys failed. Please try again later.\n\n💡 Tip: The server might be busy!' + footer
             }, pageAccessToken);
+            return;
+        }
+
+        // Save to conversation memory
+        memory.addMessage(senderId, 'user', message);
+        memory.addMessage(senderId, 'assistant', aiResponse);
+
+        aiResponse = aiResponse.trim();
+        aiResponse = makeBold(aiResponse);
+
+        const chunks = splitMessage(aiResponse);
+
+        for (let i = 0; i < chunks.length; i++) {
+            const isFirst = i === 0;
+            const isLast = i === chunks.length - 1;
+
+            let fullMessage = chunks[i];
+            if (isFirst) fullMessage = header + fullMessage;
+            if (isLast) fullMessage = fullMessage + footer;
+
+            await sendMessage(senderId, { text: fullMessage }, pageAccessToken);
         }
     }
 };
