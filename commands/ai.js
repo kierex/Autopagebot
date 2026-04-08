@@ -2,71 +2,78 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// API Keys (Primary + Backups)
-const API_KEYS = [
-  'AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI',
-  'AIzaSyDQ4TD9hnEnAt3JGcVjIm9yWbmuc9cGt1M',
-  'AIzaSyC5KE1o0o5sA4G5mYXS7GSemdHf2wQ8y3g',
-  'AIzaSyDuOaOrtTvx9W5Jw6eQOIJb613uEP-vgWQ',
-  'AIzaSyB_UMcCeW7_cnkigbePnh7GVWWEIrziaFQ'
-];
+// Model configurations
+const MODEL_LIST = {
+    chatgpt4: {
+        api: 'https://stablediffusion.fr/gpt4/predict2',
+        referer: 'https://stablediffusion.fr/chatgpt4',
+        name: 'ChatGPT-4'
+    },
+    chatgpt3: {
+        api: 'https://stablediffusion.fr/gpt3/predict',
+        referer: 'https://stablediffusion.fr/chatgpt3',
+        name: 'ChatGPT-3'
+    }
+};
 
 function makeBold(text) {
-  return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
-    let boldText = '';
-    for (let i = 0; i < word.length; i++) {
-      const char = word[i];
-      if (char >= 'a' && char <= 'z') {
-        boldText += String.fromCharCode(char.charCodeAt(0) + 0x1D41A - 97);
-      } else if (char >= 'A' && char <= 'Z') {
-        boldText += String.fromCharCode(char.charCodeAt(0) + 0x1D400 - 65);
-      } else if (char >= '0' && char <= '9') {
-        boldText += String.fromCharCode(char.charCodeAt(0) + 0x1D7CE - 48);
-      } else {
-        boldText += char;
-      }
-    }
-    return boldText;
-  });
+    return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
+        let boldText = '';
+        for (let i = 0; i < word.length; i++) {
+            const char = word[i];
+            if (char >= 'a' && char <= 'z') {
+                boldText += String.fromCharCode(char.charCodeAt(0) + 0x1D41A - 97);
+            } else if (char >= 'A' && char <= 'Z') {
+                boldText += String.fromCharCode(char.charCodeAt(0) + 0x1D400 - 65);
+            } else if (char >= '0' && char <= '9') {
+                boldText += String.fromCharCode(char.charCodeAt(0) + 0x1D7CE - 48);
+            } else {
+                boldText += char;
+            }
+        }
+        return boldText;
+    });
 }
 
 function splitMessage(text) {
-  const maxLength = 1900;
-  const chunks = [];
+    const maxLength = 1900;
+    const chunks = [];
 
-  for (let i = 0; i < text.length; i += maxLength) {
-    chunks.push(text.slice(i, i + maxLength));
-  }
+    for (let i = 0; i < text.length; i += maxLength) {
+        chunks.push(text.slice(i, i + maxLength));
+    }
 
-  return chunks;
+    return chunks;
 }
 
 module.exports = {
     name: ['ai'],
-    usage: 'ai [question] or ai reset or ai stats',
+    usage: 'ai [question]',
     version: '1.0.0',
-    author: 'AutoPagebot',
+    author: 'AutoPageBot',
     category: 'ai',
     cooldown: 5,
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
-        const message = args.join(' ');
-
         if (!args.length) {
             const stats = memory.getStats(senderId);
-            return sendMessage(senderId, { 
-                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜
+            return sendMessage(senderId, {
+                text: `🤖 𝗖𝗵𝗮𝘁𝗚𝗣𝗧 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (GPT-4)
 
-📝 Usage: ai [your question]
+📝 𝗨𝘀𝗮𝗴𝗲: chatgpt [your question]
 
-✨ Examples:
-• ai Hello! My name is John
-• ai What's my name? (remembers context)
-• ai Tell me a joke
+✨ 𝗘𝘅𝗮𝗺𝗽𝗹𝗲𝘀:
+• chatgpt Hello! How are you?
+• chatgpt What is artificial intelligence?
+• chatgpt Tell me a joke
 
-🔄 Commands:
-• ai reset - Clear conversation history
-• ai stats - Show conversation stats
+🤖 𝗠𝗼𝗱𝗲𝗹𝘀:
+• GPT-4 (default) - Latest model
+• GPT-3 - Legacy model (use -chatgpt3)
+
+🔄 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀:
+• chatgpt reset - Clear conversation history
+• chatgpt stats - Show conversation stats
 
 📊 Session: ${stats.messageCount} messages
 
@@ -74,11 +81,13 @@ module.exports = {
             }, pageAccessToken);
         }
 
+        const message = args.join(' ');
+        
         // Handle reset command
         if (message.toLowerCase() === 'reset' || message.toLowerCase() === 'clear') {
             memory.clearConversation(senderId);
             return sendMessage(senderId, {
-                text: '🧹 Conversation history cleared from memory/conversations.json!\n\n💬 Start a fresh conversation.'
+                text: '🧹 Conversation history cleared!\n\n💬 Start a fresh conversation.'
             }, pageAccessToken);
         }
 
@@ -91,7 +100,7 @@ module.exports = {
             const created = new Date(stats.createdAt).toLocaleString('en-PH', {
                 timeZone: 'Asia/Manila'
             });
-            
+
             return sendMessage(senderId, {
                 text: `📊 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻 𝗦𝘁𝗮𝘁𝘀
 
@@ -100,61 +109,81 @@ module.exports = {
 • Last active: ${lastActive}
 • Storage: memory/conversations.json
 
-💡 Use "ai reset" to clear history`
+💡 Use "chatgpt reset" to clear history`
             }, pageAccessToken);
         }
 
-        const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n';
-        const footer = '\n・────────────・';
+        // Check for model override (if user starts with gpt3)
+        let model = 'chatgpt4';
+        let prompt = message;
+        
+        if (message.toLowerCase().startsWith('gpt3') || message.toLowerCase().startsWith('chatgpt3')) {
+            model = 'chatgpt3';
+            prompt = message.replace(/^(gpt3|chatgpt3)/i, '').trim();
+        }
 
-        // Send typing indicator
-        await sendMessage(senderId, { text: '🤔 Thinking...' }, pageAccessToken);
+        if (!prompt) {
+            return sendMessage(senderId, {
+                text: `❌ Please provide a question!\n\n📝 Example: chatgpt What is the meaning of life?`
+            }, pageAccessToken);
+        }
+
+        const header = `💬 | ${MODEL_LIST[model].name}\n・────────────・\n`;
+        const footer = '\n・────────────・';
 
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
-        let prompt = message;
-        
+        let fullPrompt = prompt;
+
         if (context) {
-            prompt = `Previous conversation:\n${context}\nUser: ${message}\nAssistant:`;
+            fullPrompt = `Previous conversation:\n${context}\nUser: ${prompt}\nAssistant:`;
         }
 
         let aiResponse = null;
         let lastError = null;
 
-        // Try each API key until one works
-        for (let i = 0; i < API_KEYS.length; i++) {
-            try {
-                const response = await axios.get('https://kryptonite-api-library.onrender.com/api/gemini-vision', {
-                    params: { 
-                        prompt: prompt,
-                        uid: senderId,
-                        imgUrl: '',
-                        apikey: API_KEYS[i]
-                    },
-                    timeout: 30000
-                });
+        try {
+            // Get referer to receive cookies
+            const refererResp = await axios.get(MODEL_LIST[model].referer, { timeout: 10000 });
+            const setCookie = refererResp.headers && refererResp.headers['set-cookie'];
+            const cookieHeader = Array.isArray(setCookie) ? setCookie.join('; ') : undefined;
 
-                if (response.data && response.data.status === true && response.data.response) {
-                    aiResponse = response.data.response;
-                    console.log(`✅ API key ${i + 1} worked`);
-                    break;
+            const response = await axios.post(
+                MODEL_LIST[model].api,
+                { prompt: fullPrompt },
+                {
+                    headers: {
+                        'accept': '*/*',
+                        'content-type': 'application/json',
+                        'origin': 'https://stablediffusion.fr',
+                        'referer': MODEL_LIST[model].referer,
+                        ...(cookieHeader ? { cookie: cookieHeader } : {}),
+                        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36'
+                    },
+                    timeout: 60000
                 }
-            } catch (error) {
-                lastError = error;
-                console.log(`❌ API key ${i + 1} failed`);
+            );
+
+            if (response.data && response.data.message) {
+                aiResponse = response.data.message;
+            } else {
+                throw new Error('Invalid API response');
             }
+
+        } catch (error) {
+            lastError = error;
+            console.error(`${MODEL_LIST[model].name} Error:`, error.message);
         }
 
         if (!aiResponse) {
-            console.error('AI Error:', lastError?.message);
             await sendMessage(senderId, {
-                text: header + '❌ All API keys failed. Please try again later.\n\n💡 Tip: The server might be busy!' + footer
+                text: header + `❌ ${MODEL_LIST[model].name} is currently unavailable. Please try again later.\n\n💡 Tip: Try again in a few seconds.` + footer
             }, pageAccessToken);
             return;
         }
 
         // Save to conversation memory
-        memory.addMessage(senderId, 'user', message);
+        memory.addMessage(senderId, 'user', prompt);
         memory.addMessage(senderId, 'assistant', aiResponse);
 
         aiResponse = aiResponse.trim();
