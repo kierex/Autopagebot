@@ -2,7 +2,7 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
-    name: ['soundcloudv2, 'sc2']',
+    name: ['soundcloudv2]',
     usage: 'soundcloud [song name]',
     version: '1.0.0',
     author: 'yazky',
