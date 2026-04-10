@@ -7,7 +7,9 @@
     "start": "node index.js",
     "dev": "node index.js",
     "watch": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm install",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "echo 'Dependencies installed successfully!'"
   },
   "keywords": [
     "facebook",
