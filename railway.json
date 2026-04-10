@@ -1,0 +1,46 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install",
+    "watchPatterns": [
+      "index.js",
+      "handles/**/*.js",
+      "commands/**/*.js",
+      "public/**/*",
+      "package.json",
+      "package-lock.json"
+    ]
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10,
+    "startCommand": "npm start",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 100,
+    "healthcheckInterval": 30,
+    "healthcheckSuccessThreshold": 2,
+    "healthcheckFailureThreshold": 3,
+    "preDeployCommand": "echo 'Starting deployment...'",
+    "postDeployCommand": "echo 'Deployment completed successfully!'"
+  },
+  "env": {
+    "PORT": {
+      "required": true,
+      "value": "3000"
+    },
+    "NODE_ENV": {
+      "required": true,
+      "value": "production"
+    },
+    "VERIFY_TOKEN": {
+      "required": true,
+      "value": "bot"
+    },
+    "SESSION_SECRET": {
+      "required": true,
+      "generator": "secret"
+    }
+  }
+}
