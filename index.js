@@ -10,6 +10,10 @@ const app = express();
 const VERIFY_TOKEN = 'bot';
 const PORT = process.env.PORT || 3000;
 
+// Enable trust proxy for Railway (handles HTTPS correctly)
+app.set('trust proxy', 1);
+app.enable('trust proxy');
+
 // Cooldown storage (in-memory)
 const cooldowns = new Map();
 
@@ -43,15 +47,17 @@ function getServerUptime() {
 // Security middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Session configuration with secure settings for Railway
 app.use(session({
-    secret: 'autopagebot-secure-key-2024',
+    secret: process.env.SESSION_SECRET || 'autopagebot-secure-key-2024',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'strict'
+        sameSite: 'lax'
     }
 }));
 
@@ -187,7 +193,7 @@ function getCommandCount() {
     return fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).length;
 }
 
-// Health check endpoint
+// Health check endpoint (for Railway)
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'ok', 
@@ -198,7 +204,8 @@ app.get('/health', (req, res) => {
         verifyToken: VERIFY_TOKEN,
         commandsLoaded: getCommandCount(),
         activeCooldowns: cooldowns.size,
-        serverStartTime: serverStartTime
+        serverStartTime: serverStartTime,
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -366,7 +373,10 @@ app.post('/api/connect', async (req, res) => {
             userAgent: req.headers['user-agent']
         });
 
-        const webhookUrl = `${req.protocol}://${req.get('host')}/webhook`;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const host = req.get('host');
+        const webhookUrl = `${protocol}://${host}/webhook`;
+        
         await setupPageWebhook(pageId, pageToken, webhookUrl);
 
         console.log(`✅ Page connected: ${name} (${pageId}) by ${userName || 'Anonymous'}`);
@@ -465,8 +475,11 @@ app.post('/webhook', async (req, res) => {
 
 // API: Get tutorial info
 app.get('/api/tutorial', (req, res) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    
     res.json({
-        webhookUrl: `${req.protocol}://${req.get('host')}/webhook`,
+        webhookUrl: `${protocol}://${host}/webhook`,
         verifyToken: VERIFY_TOKEN,
         apiVersion: 'v23.0',
         docsUrl: 'https://developers.facebook.com/docs/messenger-platform',
@@ -510,10 +523,10 @@ const start = async () => {
     try {
         // Load persistent server start time
         loadServerStartTime();
-        
+
         await tokenManager.loadTokens();
 
-        const dirs = ['public', 'commands', 'temp'];
+        const dirs = ['public', 'commands', 'temp', 'memory'];
         for (const dir of dirs) {
             if (!fs.existsSync(path.join(__dirname, dir))) {
                 fs.mkdirSync(path.join(__dirname, dir), { recursive: true });
@@ -548,7 +561,8 @@ module.exports = {
             console.log('📝 Created sample command: ping.js');
         }
 
-        app.listen(PORT, () => {
+        // Listen on all interfaces for Railway
+        app.listen(PORT, '0.0.0.0', () => {
             const startDate = new Date(serverStartTime).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
             console.log(`\n🤖 AutoPageBot v2.1 Server Running`);
             console.log(`📡 URL: http://localhost:${PORT}`);
@@ -558,7 +572,8 @@ module.exports = {
             console.log(`⏱️ Cooldown Range: 0-20 seconds`);
             console.log(`📅 Server Started: ${startDate}`);
             console.log(`💡 Dashboard: http://localhost:${PORT}`);
-            console.log(`📚 Tutorial: http://localhost:${PORT}#tutorial\n`);
+            console.log(`📚 Tutorial: http://localhost:${PORT}#tutorial`);
+            console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}\n`);
         });
     } catch (error) {
         console.error('Startup failed:', error.message);
