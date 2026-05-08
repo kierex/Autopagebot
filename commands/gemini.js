@@ -1,8 +1,9 @@
 const axios = require("axios");
 const { sendMessage } = require('../handles/sendMessage');
 
-// New Gemini API configuration
-const GEMINI_API_URL = 'https://kryptonite-api-library.onrender.com/api/gemini-vision';
+// Direct Gemini API configuration
+const GEMINI_API_KEY = 'AIzaSyCKFCGtkOcBcTgxrwGpPvM4gBiHPgia4Ak';
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 module.exports = {
   name: "gemini",
@@ -31,7 +32,7 @@ module.exports = {
 
       if (!finalImageUrl) {
         const urlPattern = /(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|bmp|svg|tiff|heic|heif|ico|jfif|avif|cur))/i;
-        
+
         // Check if any argument is an image URL
         for (let i = 0; i < args.length; i++) {
           if (urlPattern.test(args[i])) {
@@ -62,35 +63,12 @@ module.exports = {
       let aiResponse;
 
       if (finalImageUrl && finalPrompt) {
-        // Image + Text mode using Krypton API
-        const encodedPrompt = encodeURIComponent(finalPrompt);
-        const encodedImageUrl = encodeURIComponent(finalImageUrl);
-        const apiUrl = `${GEMINI_API_URL}?prompt=${encodedPrompt}&uid=${senderId}&imgUrl=${encodedImageUrl}&apikey=AIzaSyCr5uVmoBCR4N8sASTirK2d-F1lYzAxrSU`;
-        
-        const response = await axios.get(apiUrl, {
-          timeout: 60000 // 60 seconds timeout
-        });
-        
-        if (response.data && response.data.status === true) {
-          aiResponse = response.data.response;
-        } else {
-          throw new Error(response.data?.message || "Failed to get response from Gemini API");
-        }
+        // Image + Text mode using direct Gemini API
+        aiResponse = await callGeminiVisionAPI(finalPrompt, finalImageUrl, senderId);
       } 
       else if (finalPrompt) {
-        // Text-only mode (no image)
-        const encodedPrompt = encodeURIComponent(finalPrompt);
-        const apiUrl = `${GEMINI_API_URL}?prompt=${encodedPrompt}&uid=${senderId}&apikey=AIzaSyD5U9SFqJ4FiSQv00pXb06Kv3ZH9H76JjI`;
-        
-        const response = await axios.get(apiUrl, {
-          timeout: 60000
-        });
-        
-        if (response.data && response.data.status === true) {
-          aiResponse = response.data.response;
-        } else {
-          throw new Error(response.data?.message || "Failed to get response from Gemini API");
-        }
+        // Text-only mode using direct Gemini API
+        aiResponse = await callGeminiTextAPI(finalPrompt, senderId);
       }
       else {
         return sendMessage(senderId, { text: `❌ Please provide a question or image.` }, pageAccessToken);
@@ -102,19 +80,22 @@ module.exports = {
 
       // Format and send response
       const message = `✨ 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n━━━━━━━━━━━━━━━━━\n${aiResponse}\n━━━━━━━━━━━━━━━━━`;
-      
+
       await sendConcatenatedMessage(senderId, message, pageAccessToken);
 
     } catch (error) {
       console.error("Gemini Error:", error);
-      
+
       let errorMsg = `❌ Error: `;
-      
+
       if (error.message.includes('timeout') || error.code === 'ECONNABORTED') {
         errorMsg += `Request timeout. Please try again.`;
       } 
       else if (error.response?.status === 403 || error.message.includes('API key')) {
         errorMsg += `API key error. Please contact support.`;
+      }
+      else if (error.response?.status === 429) {
+        errorMsg += `Rate limit exceeded. Please try again later.`;
       }
       else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
         errorMsg += `Network error. Please check your connection.`;
@@ -122,11 +103,111 @@ module.exports = {
       else {
         errorMsg += error.message || "Something went wrong.";
       }
-      
+
       await sendMessage(senderId, { text: errorMsg }, pageAccessToken);
     }
   }
 };
+
+// Function to call Gemini Text API directly
+async function callGeminiTextAPI(prompt, uid) {
+  try {
+    // Build conversation context (optional - can be expanded for memory)
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ]
+    };
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        },
+        timeout: 60000
+      }
+    );
+
+    if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return response.data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error('Invalid response from Gemini API');
+    }
+  } catch (error) {
+    console.error("Gemini Text API Error:", error.message);
+    if (error.response) {
+      console.error("Response data:", error.response.data);
+    }
+    throw error;
+  }
+}
+
+// Function to call Gemini Vision API with image
+async function callGeminiVisionAPI(prompt, imageUrl, uid) {
+  try {
+    // Fetch and convert image to base64
+    const imageResp = await axios.get(imageUrl, { 
+      responseType: 'arraybuffer',
+      timeout: 30000
+    });
+    
+    const imageData = Buffer.from(imageResp.data, 'binary').toString('base64');
+    
+    // Determine mime type from URL or default to jpeg
+    let mimeType = 'image/jpeg';
+    if (imageUrl.match(/\.png/i)) mimeType = 'image/png';
+    else if (imageUrl.match(/\.gif/i)) mimeType = 'image/gif';
+    else if (imageUrl.match(/\.webp/i)) mimeType = 'image/webp';
+    
+    // Build payload with image
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: imageData
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        },
+        timeout: 90000 // 90 seconds for image processing
+      }
+    );
+
+    if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return response.data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error('Invalid response from Gemini Vision API');
+    }
+  } catch (error) {
+    console.error("Gemini Vision API Error:", error.message);
+    if (error.response) {
+      console.error("Response data:", error.response.data);
+    }
+    throw error;
+  }
+}
 
 // Function to get image from replied message
 async function getRepliedImage(mid, pageAccessToken) {
