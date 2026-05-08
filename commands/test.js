@@ -3,37 +3,36 @@ const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
   name: "shield",
-  usage: "shield [cookie] | [action]",
+  usage: "fbshield [cookie] | [enable]",
   author: "AutoPageBot",
   version: "1.0.0",
   category: "tools",
-  cooldown: 15,
+  cooldown: 10,
 
   async execute(senderId, args, pageAccessToken, event) {
     // Check if args are provided
     if (!args.length) {
       return sendMessage(
         senderId,
-        { text: `🛡️ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 𝗣𝗿𝗼𝗳𝗶𝗹𝗲 𝗦𝗵𝗶𝗲𝗹𝗱\n━━━━━━━━━━━━━━━━━━\nℹ️ Protect your Facebook profile picture from being downloaded or screenshotted.\n\n📝 Usage:\nshield [cookie] | [action]\n\n📌 Actions:\n• on - Turn ON profile picture guard\n• off - Turn OFF profile picture guard\n• status - Check shield status\n• timer - Set temporary shield (hours)\n\n📌 Examples:\n• shield cookie=data | on\n• shield cookie=data | off\n• shield cookie=data | status\n• shield cookie=data | timer | 24\n\n💡 Separate cookie and action with " | "\n🔒 Protects your DP from screenshots & downloads` },
+        { text: `🛡️ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 𝗣𝗿𝗼𝗳𝗶𝗹𝗲 𝗚𝘂𝗮𝗿𝗱\n━━━━━━━━━━━━━━━━━━\nℹ️ Enable or disable Facebook profile picture guard using cookies.\n\n📝 Usage:\nfbshield [cookie] | [enable]\n\n📌 Examples:\n• fbshield cookie=c_user=123; xs=456 | true\n• fbshield cookie=c_user=123; xs=456 | false\n\n💡 Separate cookie and enable with " | "\n🔒 enable: true (on) or false (off)` },
         pageAccessToken
       );
     }
 
-    // Parse the arguments: cookie | action | duration (optional)
+    // Parse the arguments: cookie | enable
     const fullInput = args.join(' ');
     const parts = fullInput.split('|').map(part => part.trim());
     
     if (parts.length < 2) {
       return sendMessage(
         senderId,
-        { text: `❌ Missing parameters!\n\n📝 Format: shield [cookie] | [action]\n\n📌 Example: shield cookie=data | on` },
+        { text: `❌ Missing parameters!\n\n📝 Format: fbshield [cookie] | [enable]\n\n📌 Example: fbshield c_user=123; xs=456 | true\n\n⚠️ enable must be 'true' or 'false'` },
         pageAccessToken
       );
     }
 
     const cookie = parts[0];
-    const action = parts[1].toLowerCase();
-    const duration = parts[2] ? parseInt(parts[2]) : null;
+    const enable = parts[1].toLowerCase();
 
     // Validate cookie
     if (!cookie) {
@@ -44,120 +43,106 @@ module.exports = {
       );
     }
 
-    // Validate action
-    const validActions = ['on', 'off', 'status', 'timer'];
-    if (!validActions.includes(action)) {
+    // Validate enable parameter
+    if (enable !== 'true' && enable !== 'false') {
       return sendMessage(
         senderId,
-        { text: `❌ Invalid action: ${action}\n\nValid actions: ${validActions.join(', ')}\n\n📌 Example: shield cookie=data | on` },
+        { text: `❌ Invalid enable value!\n\nUse: true to enable guard, false to disable guard\n\n📌 Example: fbshield cookie=data | true` },
         pageAccessToken
       );
     }
 
-    // Validate duration for timer action
-    if (action === 'timer' && (!duration || duration < 1 || duration > 168)) {
+    // Extract user ID from cookie
+    const userId = extractUserId(cookie);
+    if (!userId) {
       return sendMessage(
         senderId,
-        { text: `❌ Invalid duration!\n\nPlease provide hours (1-168 hours / 7 days max).\n\n📌 Example: shield cookie=data | timer | 24` },
+        { text: `❌ Invalid cookie! Could not extract user ID.\n\nMake sure your cookie contains 'c_user=...'` },
         pageAccessToken
       );
     }
 
     try {
-      // Extract user ID from cookie
-      const userId = extractUserId(cookie);
-      if (!userId) {
-        throw new Error('Failed to extract user ID from cookie. Make sure c_user is present.');
-      }
-
-      // Get fb_dtsg token
-      const fb_dtsg = await getFbDtsg(cookie);
-      if (!fb_dtsg) {
-        throw new Error('Failed to get security token. Cookie might be expired.');
-      }
-
+      // Send processing message
       await sendMessage(
         senderId,
-        { text: `🛡️ Processing profile shield ${action}...\n\n👤 Account: ${userId}\n⏳ Please wait...` },
+        { text: `🔄 ${enable === 'true' ? 'Enabling' : 'Disabling'} profile guard...\n\n👤 User ID: ${userId}\n⏳ Please wait...` },
         pageAccessToken
       );
 
-      let result = null;
-      let statusMessage = '';
-
-      switch(action) {
-        case 'on':
-          result = await enableProfileShield(cookie, userId, fb_dtsg);
-          statusMessage = `✅ Profile Shield ENABLED successfully!\n\n` +
-            `🛡️ Your profile picture is now protected\n` +
-            `🚫 Cannot be downloaded\n` +
-            `📸 Cannot be screenshotted\n` +
-            `👁️ Only friends can see your DP\n` +
-            `🔒 Extra privacy layer added`;
-          break;
-          
-        case 'off':
-          result = await disableProfileShield(cookie, userId, fb_dtsg);
-          statusMessage = `🔓 Profile Shield DISABLED\n\n` +
-            `⚠️ Your profile picture is now public\n` +
-            `📥 Can be downloaded\n` +
-            `📸 Can be screenshotted\n` +
-            `💡 Recommend keeping shield ON for privacy`;
-          break;
-          
-        case 'status':
-          result = await getShieldStatus(cookie, userId);
-          statusMessage = `🛡️ Profile Shield Status\n━━━━━━━━━━━━━━━━━━\n` +
-            `📊 Status: ${result.enabled ? '✅ ENABLED' : '❌ DISABLED'}\n` +
-            `🕒 Since: ${result.enabled_since || 'N/A'}\n` +
-            `⏰ Expires: ${result.expires || 'Never'}\n` +
-            `👁️ Visibility: ${result.visibility || 'Friends only'}\n` +
-            `🔒 Protection: ${result.protection_level || 'Full'}\n` +
-            `━━━━━━━━━━━━━━━━━━\n` +
-            `💡 Shield prevents:\n` +
-            `• Screenshots of profile picture\n` +
-            `• Downloading profile picture\n` +
-            `• Right-click saving\n` +
-            `• Profile picture zoom on non-friends`;
-          break;
-          
-        case 'timer':
-          result = await setTemporaryShield(cookie, userId, fb_dtsg, duration);
-          statusMessage = `⏰ Temporary Profile Shield Set\n━━━━━━━━━━━━━━━━━━\n` +
-            `🛡️ Shield will be active for: ${duration} hour(s)\n` +
-            `📅 Activated: ${new Date().toLocaleString()}\n` +
-            `⏰ Expires: ${new Date(Date.now() + duration * 3600000).toLocaleString()}\n` +
-            `━━━━━━━━━━━━━━━━━━\n` +
-            `✅ Your profile picture is protected until the timer ends.\n` +
-            `💡 Use "shield cookie | off" to disable early.`;
-          break;
+      // Get access token from cookie first
+      const accessToken = await getAccessTokenFromCookie(cookie);
+      if (!accessToken) {
+        throw new Error('Failed to extract access token from cookie');
       }
 
-      if (result && result.error) {
-        throw new Error(result.error);
-      }
+      // Generate session IDs
+      const session_id = generateUUID();
+      const client_mutation_id = generateUUID();
 
-      // Add recommendations for enabled shield
-      if (action === 'on') {
-        statusMessage += `\n\n━━━━━━━━━━━━━━━━━━\n📌 Additional Tips:\n` +
-          `• Review your profile picture\n` +
-          `• Check who can see your photos\n` +
-          `• Enable login alerts\n` +
-          `• Use 2FA for extra security`;
-      }
+      // Prepare GraphQL variables
+      const variables = {
+        "0": {
+          is_shielded: enable === "true",
+          session_id: session_id,
+          client_mutation_id: client_mutation_id
+        }
+      };
 
-      await sendMessage(senderId, { text: statusMessage }, pageAccessToken);
+      // Build GraphQL request
+      const url = `https://graph.facebook.com/graphql`;
+      const params = new URLSearchParams({
+        variables: JSON.stringify(variables),
+        method: "post",
+        doc_id: "1477043292367183",
+        query_name: "IsShieldedSetMutation",
+        strip_defaults: "false",
+        strip_nulls: "false",
+        locale: "en_US",
+        client_country_code: "US",
+        fb_api_req_friendly_name: "IsShieldedSetMutation",
+        fb_api_caller_class: "IsShieldedSetMutation",
+        access_token: accessToken
+      });
+
+      const response = await axios.post(`${url}?${params.toString()}`, {}, {
+        headers: {
+          'Cookie': cookie,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        timeout: 30000
+      });
+
+      // Check if successful
+      if (response.data && !response.data.error) {
+        const action = enable === 'true' ? 'enabled' : 'disabled';
+        const message = `✅ Profile guard ${action} successfully!\n\n` +
+          `🛡️ Status: ${enable === 'true' ? 'PROTECTED' : 'PUBLIC'}\n` +
+          `👤 Account: ${userId}\n` +
+          `🕒 Time: ${new Date().toLocaleString()}\n` +
+          `━━━━━━━━━━━━━━━━━━\n` +
+          `${enable === 'true' ? 
+            '🔒 Your profile picture is now protected:\n• Cannot be downloaded\n• Cannot be screenshotted\n• Friends only visibility' : 
+            '⚠️ Your profile picture is now public:\n• Can be downloaded\n• Can be screenshotted\n• Visible to everyone'}\n` +
+          `━━━━━━━━━━━━━━━━━━\n` +
+          `💡 ${enable === 'true' ? 'Keep your cookie secure!' : 'Recommend re-enabling guard for privacy'}`;
+
+        await sendMessage(senderId, { text: message }, pageAccessToken);
+      } else {
+        throw new Error(response.data?.error?.message || 'Failed to toggle profile guard');
+      }
 
     } catch (error) {
-      console.error("Profile Shield Error:", error.message);
+      console.error("FB Shield Error:", error.message);
       
-      let errorMsg = `❌ Profile shield ${action} failed: `;
+      let errorMsg = `❌ Profile guard ${enable === 'true' ? 'enable' : 'disable'} failed: `;
       
-      if (error.message.includes('cookie') || error.message.includes('authentication')) {
+      if (error.message.includes('cookie') || error.message.includes('access token')) {
         errorMsg += `Invalid or expired cookie.\n\n💡 Solution: Get fresh Facebook cookies.`;
       } 
-      else if (error.message.includes('checkpoint')) {
-        errorMsg += `Account is in checkpoint/verification.\n\n💡 Solution: Complete Facebook verification first.`;
+      else if (error.message.includes('checkpoint') || error.message.includes('blocked')) {
+        errorMsg += `Account is in checkpoint or temporarily blocked.\n\n💡 Solution: Complete Facebook verification first.`;
       }
       else if (error.message.includes('permission')) {
         errorMsg += `Insufficient permission.\n\n💡 Make sure you own this account.`;
@@ -169,13 +154,9 @@ module.exports = {
         errorMsg += error.message || "Something went wrong.";
       }
       
-      errorMsg += `\n\n🛡️ Common fixes:\n• Refresh your cookie\n• Complete any Facebook checkpoints\n• Don't use a locked account\n• Make sure you're logged in on browser`;
+      errorMsg += `\n\n🛡️ Common fixes:\n• Refresh your cookie\n• Complete any Facebook checkpoints\n• Don't use a locked account\n• Make sure cookie has c_user and xs values`;
       
-      await sendMessage(
-        senderId,
-        { text: errorMsg },
-        pageAccessToken
-      );
+      await sendMessage(senderId, { text: errorMsg }, pageAccessToken);
     }
   }
 };
@@ -186,9 +167,16 @@ function extractUserId(cookie) {
   return match ? match[1] : null;
 }
 
-// Get fb_dtsg token
-async function getFbDtsg(cookie) {
+// Extract access token from cookie
+async function getAccessTokenFromCookie(cookie) {
   try {
+    // First try to get from cookie directly
+    const tokenMatch = cookie.match(/access_token=([^;]+)/);
+    if (tokenMatch) {
+      return tokenMatch[1];
+    }
+    
+    // If not in cookie, fetch from Facebook
     const response = await axios.get('https://mbasic.facebook.com/', {
       headers: {
         'Cookie': cookie,
@@ -196,113 +184,45 @@ async function getFbDtsg(cookie) {
       }
     });
     
-    const match = response.data.match(/name="fb_dtsg" value="([^"]+)"/);
-    return match ? match[1] : null;
+    // Extract EAA access token from page
+    const tokenPattern = /EAA[A-Za-z0-9]+/;
+    const match = response.data.match(tokenPattern);
+    
+    if (match) {
+      return match[0];
+    }
+    
+    // Fallback: try to get from Graph API
+    const userId = extractUserId(cookie);
+    if (userId) {
+      const graphResponse = await axios.get(`https://graph.facebook.com/v21.0/${userId}`, {
+        params: {
+          fields: 'id,name',
+          access_token: 'none'
+        },
+        headers: {
+          'Cookie': cookie
+        }
+      });
+      
+      if (graphResponse.data && graphResponse.data.id) {
+        // Return a basic token (may not work for all operations)
+        return cookie;
+      }
+    }
+    
+    return null;
   } catch (error) {
-    console.error('Failed to get fb_dtsg:', error.message);
+    console.error('Failed to get access token:', error.message);
     return null;
   }
 }
 
-// Enable profile picture shield
-async function enableProfileShield(cookie, userId, fb_dtsg) {
-  try {
-    // Facebook's profile shield endpoint
-    const response = await axios.post(
-      'https://mbasic.facebook.com/profile_picture_shield/save/',
-      `fb_dtsg=${encodeURIComponent(fb_dtsg)}&shield_enabled=1&av=${userId}`,
-      {
-        headers: {
-          'Cookie': cookie,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      }
-    );
-    
-    // Check if successful
-    if (response.data.includes('success') || !response.data.includes('error')) {
-      return { success: true, enabled: true };
-    } else {
-      return { error: 'Failed to enable profile shield' };
-    }
-  } catch (error) {
-    return { error: error.message };
-  }
-}
-
-// Disable profile picture shield
-async function disableProfileShield(cookie, userId, fb_dtsg) {
-  try {
-    const response = await axios.post(
-      'https://mbasic.facebook.com/profile_picture_shield/save/',
-      `fb_dtsg=${encodeURIComponent(fb_dtsg)}&shield_enabled=0&av=${userId}`,
-      {
-        headers: {
-          'Cookie': cookie,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      }
-    );
-    
-    if (response.data.includes('success') || !response.data.includes('error')) {
-      return { success: true, enabled: false };
-    } else {
-      return { error: 'Failed to disable profile shield' };
-    }
-  } catch (error) {
-    return { error: error.message };
-  }
-}
-
-// Get current shield status
-async function getShieldStatus(cookie, userId) {
-  try {
-    const response = await axios.get(`https://mbasic.facebook.com/${userId}/about`, {
-      headers: {
-        'Cookie': cookie,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-    
-    const hasShield = response.data.includes('profile_picture_shield') || 
-                      response.data.includes('Profile Guard');
-    
-    return {
-      enabled: hasShield,
-      enabled_since: hasShield ? new Date().toLocaleDateString() : null,
-      visibility: hasShield ? 'Friends only' : 'Public',
-      protection_level: hasShield ? 'Full' : 'None'
-    };
-  } catch (error) {
-    return { enabled: false, error: error.message };
-  }
-}
-
-// Set temporary shield for specific duration
-async function setTemporaryShield(cookie, userId, fb_dtsg, hours) {
-  try {
-    // Enable shield
-    await enableProfileShield(cookie, userId, fb_dtsg);
-    
-    // Set timer to auto-disable
-    setTimeout(async () => {
-      try {
-        await disableProfileShield(cookie, userId, fb_dtsg);
-        console.log(`Profile shield automatically disabled after ${hours} hours for user ${userId}`);
-      } catch (error) {
-        console.error('Failed to auto-disable shield:', error.message);
-      }
-    }, hours * 3600000);
-    
-    return { 
-      success: true, 
-      enabled: true, 
-      duration: hours,
-      expires: new Date(Date.now() + hours * 3600000)
-    };
-  } catch (error) {
-    return { error: error.message };
-  }
+// Generate UUID for session ID
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
