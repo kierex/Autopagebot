@@ -46,7 +46,7 @@ function extractImageUrl(message) {
 
 module.exports = {
     name: ['ai'],
-    usage: 'ai [question] or ai reset or ai stats or ai [question] with image URL',
+    usage: 'ai [question] or ai reset',
     version: '1.0.0',
     author: 'AutoPagebot',
     category: 'ai',
