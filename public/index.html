@@ -1,169 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AutoPageBot</title>
-
-  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AutoPageBot - Messenger Automation</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <div id="particles-js"></div>
+    <div id="particles-js"></div>
+    <button class="theme-toggle" id="themeToggleBtn">
+        <i class="fas fa-sun"></i>
+    </button>
 
-  <button class="theme-toggle" onclick="toggleTheme()">
-    <i class="fas fa-sun"></i>
-  </button>
+    <button class="menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
 
-  <button class="menu-toggle" onclick="toggleMobileMenu()" style="display: none;">
-    <i class="fas fa-bars"></i>
-  </button>
+    <div class="main-wrapper">
+        <!-- Sidebar Menu - FIXED with smooth transition -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <h2><i class="fas fa-robot"></i> AutoPageBot</h2>
+                <p>Messenger Automation v2.1</p>
+            </div>
 
-  <div class="main-wrapper">
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="menu-item" data-section="connect">
+                    <i class="fas fa-plug"></i>
+                    <span>Connect Page</span>
+                </div>
+                <div class="menu-item" data-section="sessions">
+                    <i class="fas fa-globe"></i>
+                    <span>Active Sessions</span>
+                    <span class="menu-badge" id="menuBadgeCount">0</span>
+                </div>
+                <div class="menu-item" data-section="commands">
+                    <i class="fas fa-terminal"></i>
+                    <span>Available Commands</span>
+                    <span class="menu-badge" id="commandsBadgeCount">0</span>
+                </div>
+                <div class="menu-item" data-section="config">
+                    <i class="fab fa-facebook"></i>
+                    <span>Facebook Config</span>
+                </div>
+                <div class="menu-item" data-section="tutorial">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Tutorial</span>
+                </div>
+            </div>
 
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-
-      <div class="sidebar-logo">
-        <h2><i class="fas fa-robot"></i> AutoPageBot</h2>
-        <p>Messenger Automation v2.1</p>
-      </div>
-
-      <div class="sidebar-menu">
-
-        <div class="menu-item active" data-section="dashboard">
-          <i class="fas fa-tachometer-alt"></i>
-          <span>Dashboard</span>
+            <div class="sidebar-footer">
+                <div class="menu-item" id="privacyPolicyBtn">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Privacy Policy</span>
+                </div>
+                <div class="menu-item" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Refresh</span>
+                </div>
+            </div>
         </div>
 
-        <div class="menu-item" data-section="connect">
-          <i class="fas fa-plug"></i>
-          <span>Connect Page</span>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="section active-section">
+                <div class="header">
+                    <h1><i class="fas fa-robot"></i> AutoPageBot <span class="version">v2.1</span></h1>
+                    <p>Messenger Automation Platform</p>
+                </div>
+
+                <div class="banner">
+                    <img src="https://i.imgur.com/ovfQDJq.gif" alt="AutoPageBot Banner">
+                </div>
+
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-calendar"></i>
+                        <div class="label">Date & Time</div>
+                        <div class="value" id="datetime">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-battery-full"></i>
+                        <div class="label">Battery</div>
+                        <div class="value" id="battery">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-network-wired"></i>
+                        <div class="label">IP Address</div>
+                        <div class="value" id="ip">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-laptop-code"></i>
+                        <div class="label">User Agent</div>
+                        <div class="value" id="useragent">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> System Status</h2>
+                    <p>All systems operational. Your bots are running smoothly.</p>
+                    <div style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span><i class="fas fa-globe"></i> Active Sessions</span>
+                            <span id="statusActiveSessions" style="color: #27ae60; font-weight: bold;">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span><i class="fas fa-server"></i> Server Status</span>
+                            <span style="color: #27ae60; font-weight: bold;">● Online</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span><i class="fas fa-clock"></i> Server Uptime</span>
+                            <span id="serverUptime" style="font-weight: bold;">Loading...</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span><i class="fas fa-calendar-alt"></i> Started At</span>
+                            <span id="serverStartTime" style="font-weight: bold;">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connect Section -->
+            <div id="connect-section" class="section">
+                <div class="card">
+                    <h2><i class="fas fa-plug"></i> Access your page</h2>
+                    <p>Paste your Page Token to link your Facebook page</p>
+
+                    <form id="connectForm">
+                        <div class="input-group">
+                            <label><i class="fas fa-user"></i> PAGE OWNER (OPTIONAL)</label>
+                            <input type="text" id="userName" placeholder="e.g. John Smith">
+                        </div>
+
+                        <div class="input-group">
+                            <label><i class="fas fa-tag"></i> PAGE NAME (OPTIONAL)</label>
+                            <input type="text" id="pageName" placeholder="e.g. Auto Page Bot">
+                        </div>
+
+                        <div class="input-group">
+                            <label><i class="fas fa-key"></i> PAGE TOKEN (REQUIRED) *</label>
+                            <textarea id="pageToken" rows="3" placeholder="Paste your Page Access Token here..."></textarea>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="agreeTerms">
+                            <label for="agreeTerms">I agree to the <a href="#" id="privacyLink" style="color: #667eea;">Privacy Policy</a> and Terms of Service</label>
+                        </div>
+
+                        <button type="submit" class="btn-connect" id="connectBtn" disabled>
+                            <i class="fas fa-link"></i> Connect Page →
+                        </button>
+                    </form>
+
+                    <div id="message" class="message"></div>
+                </div>
+            </div>
+
+            <!-- Active Sessions Section -->
+            <div id="sessions-section" class="section">
+                <div class="card">
+                    <h2><i class="fas fa-globe"></i> Active Sessions</h2>
+                    <p>All connected pages and their status with uptime</p>
+                    <div id="sessionsList" class="sessions-grid">
+                        <div class="loading">Loading sessions...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Commands Section -->
+            <div id="commands-section" class="section">
+                <div class="card">
+                    <h2><i class="fas fa-terminal"></i> Available Commands</h2>
+                    <p>All available bot commands grouped by category</p>
+                    <div id="commandsList" class="commands-container">
+                        <div class="loading">Loading commands...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Facebook Config Section -->
+            <div id="config-section" class="section">
+                <div class="card">
+                    <h3><i class="fab fa-facebook"></i> Facebook Configuration</h3>
+                    <p>Copy these details to your Facebook App</p>
+                    <div class="config-row">
+                        <span class="config-label"><i class="fas fa-globe"></i> Webhook URL:</span>
+                        <span class="config-value" id="webhookUrl">loading...</span>
+                        <button class="copy-btn" data-copy="webhookUrl"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label"><i class="fas fa-check-circle"></i> Verify Token:</span>
+                        <span class="config-value" id="verifyToken">autopagebot</span>
+                        <button class="copy-btn" data-copy="verifyToken"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label"><i class="fab fa-facebook"></i> API Version:</span>
+                        <span class="config-value">v23.0</span>
+                        <button class="copy-btn" data-copy-text="v23.0"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutorial Section -->
+            <div id="tutorial-section" class="section">
+                <div class="card">
+                    <h2><i class="fas fa-graduation-cap"></i> 🤖 AutoPageBot Setup Tutorial</h2>
+                    <p>Complete guide to creating and deploying your Facebook Messenger bot</p>
+                    <div class="tutorial-container">
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">📋</div><div class="step-title">Prerequisites</div></div>
+                            <div class="step-content"><ul><li>A Facebook account</li><li>A Powered by: developer.facebook.com</li></ul></div>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">1</div><div class="step-title">Initial Facebook Setup</div></div>
+                            <div class="step-content"><ol><li>Log in to Facebook</li><li>Create a Facebook Page</li><li>Go to developers.facebook.com/apps</li></ol></div>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">2</div><div class="step-title">Create a Facebook App</div></div>
+                            <div class="step-content"><ol><li>Click "Create App"</li><li>Select "Business" as type</li><li>Fill in details and click "Create App"</li></ol></div>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">3</div><div class="step-title">Generate Access Token</div></div>
+                            <div class="step-content"><ol><li>Add Messenger product</li><li>Connect your Facebook Page</li><li>Generate and copy Page Access Token</li></ol>
+                            <div class="warning-box">⚠️ Save this token securely!</div></div>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">4</div><div class="step-title">Connect Page</div></div>
+                            <div class="step-content"><ol><li>Go to Connect Page section</li><li>Enter name and paste token</li><li>Click Connect Page</li></ol></div>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">5</div><div class="step-title">Set Up Webhooks</div></div>
+                            <div class="step-content"><ol><li>Go to Messenger API Settings</li><li>Add Callback URL: <code id="tutorialWebhookUrl">loading...</code></li><li>Verify Token: <code>bot</code></li><li>Subscribe to messages, messaging_postbacks</li></ol></div>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">6</div><div class="step-title">Make App Live</div></div>
+                            <div class="step-content"><ol><li>Toggle app from Development to Live</li><li>Generate new token and reconnect</li></ol>
+                            <div class="success-box">✅ Your bot is now live!</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>© 2024 AutoPageBot — Messenger Automation</p>
+            </div>
         </div>
-
-        <div class="menu-item" data-section="sessions">
-          <i class="fas fa-globe"></i>
-          <span>Active Sessions</span>
-          <span class="menu-badge" id="menuBadgeCount">0</span>
-        </div>
-
-        <div class="menu-item" data-section="commands">
-          <i class="fas fa-terminal"></i>
-          <span>Available Commands</span>
-          <span class="menu-badge" id="commandsBadgeCount">0</span>
-        </div>
-
-        <div class="menu-item" data-section="config">
-          <i class="fab fa-facebook"></i>
-          <span>Facebook Config</span>
-        </div>
-
-        <div class="menu-item" data-section="tutorial">
-          <i class="fas fa-graduation-cap"></i>
-          <span>Tutorial</span>
-        </div>
-
-      </div>
-
-      <div class="sidebar-footer">
-
-        <div class="menu-item" onclick="showPrivacy()">
-          <i class="fas fa-shield-alt"></i>
-          <span>Privacy Policy</span>
-        </div>
-
-        <div class="menu-item" onclick="window.location.reload()">
-          <i class="fas fa-sync-alt"></i>
-          <span>Refresh</span>
-        </div>
-
-      </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-
-      <div id="dashboard-section" class="section active-section">
-
-        <div class="header">
-          <h1>
-            <i class="fas fa-robot"></i>
-            AutoPageBot
-            <span class="version">v2.1</span>
-          </h1>
-
-          <p>Messenger Automation Platform</p>
+    <!-- Privacy Modal -->
+    <div id="privacyModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-shield-alt"></i> Privacy Policy</h2>
+            <p>AutoPageBot respects your privacy. We collect:</p>
+            <ul><li>Page access tokens (stored locally in tokens.json)</li><li>Page names and IDs for display</li><li>Message content for bot responses</li></ul>
+            <p>By using this service, you agree to these terms.</p>
+            <div class="modal-buttons">
+                <button class="btn-accept" id="acceptPrivacyBtn"><i class="fas fa-check"></i> Accept</button>
+                <button class="btn-decline" id="declinePrivacyBtn"><i class="fas fa-times"></i> Decline</button>
+            </div>
         </div>
-
-        <div class="banner">
-          <img src="https://cdnb.artstation.com/p/assets/images/images/066/149/065/original/killer-rabbit-media-chinese-alleyway-export.gif?1692171513" alt="Banner" />
-        </div>
-
-        <div class="dashboard-stats">
-
-          <div class="stat-card">
-            <i class="fas fa-calendar"></i>
-            <div class="label">Date & Time</div>
-            <div class="value" id="datetime">Loading...</div>
-          </div>
-
-          <div class="stat-card">
-            <i class="fas fa-battery-full"></i>
-            <div class="label">Battery</div>
-            <div class="value" id="battery">Loading...</div>
-          </div>
-
-          <div class="stat-card">
-            <i class="fas fa-network-wired"></i>
-            <div class="label">IP Address</div>
-            <div class="value" id="ip">Loading...</div>
-          </div>
-
-          <div class="stat-card">
-            <i class="fas fa-laptop-code"></i>
-            <div class="label">User Agent</div>
-            <div class="value" id="useragent">Loading...</div>
-          </div>
-
-        </div>
-
-      </div>
-
     </div>
-  </div>
 
-  <!-- Privacy Modal -->
-  <div id="privacyModal" class="modal">
-
-    <div class="modal-content">
-
-      <h2>
-        <i class="fas fa-shield-alt"></i>
-        Privacy Policy
-      </h2>
-
-      <p>AutoPageBot respects your privacy.</p>
-
-      <div class="modal-buttons">
-        <button class="btn-accept" onclick="acceptPrivacy()">
-          <i class="fas fa-check"></i>
-          Accept
-        </button>
-
-        <button class="btn-decline" onclick="declinePrivacy()">
-          <i class="fas fa-times"></i>
-          Decline
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-  <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
