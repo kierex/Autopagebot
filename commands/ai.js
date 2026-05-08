@@ -2,10 +2,6 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// Configuration
-const API_KEY = 'AIzaSyCKFCGtkOcBcTgxrwGpPvM4gBiHPgia4Ak';
-const MODEL = "gemini-2.5-flash";
-
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
     let boldText = '';
@@ -36,14 +32,6 @@ function splitMessage(text) {
   return chunks;
 }
 
-// Function to extract image URL from message if present
-function extractImageUrl(message) {
-  // Check for common image URL patterns
-  const urlPattern = /(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp))/i;
-  const match = message.match(urlPattern);
-  return match ? match[0] : null;
-}
-
 module.exports = {
     name: ['ai'],
     usage: 'ai [question] or ai reset',
@@ -54,18 +42,11 @@ module.exports = {
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
         const message = args.join(' ');
-        const imageUrl = extractImageUrl(message);
         
-        // Clean message by removing image URL if present
-        let cleanMessage = message;
-        if (imageUrl) {
-            cleanMessage = message.replace(imageUrl, '').trim();
-        }
-
         if (!args.length) {
             const stats = memory.getStats(senderId);
             return sendMessage(senderId, { 
-                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜 (Gemini Vision)
+                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜 (ChatGPT4)
 
 📝 Usage: ai [your question]
 
@@ -73,7 +54,6 @@ module.exports = {
 • ai Hello! My name is John
 • ai What's my name? (remembers context)
 • ai Tell me a joke
-• ai What's in this image? https://example.com/image.jpg
 
 🔄 Commands:
 • ai reset - Clear conversation history
@@ -81,12 +61,12 @@ module.exports = {
 
 📊 Session: ${stats.messageCount} messages
 
-💡 The AI remembers your conversation and can analyze images!`
+💡 The AI remembers your conversation context!`
             }, pageAccessToken);
         }
 
         // Handle reset command
-        if (cleanMessage.toLowerCase() === 'reset' || cleanMessage.toLowerCase() === 'clear') {
+        if (message.toLowerCase() === 'reset' || message.toLowerCase() === 'clear') {
             memory.clearConversation(senderId);
             return sendMessage(senderId, {
                 text: '🧹 Conversation history cleared from memory/conversations.json!\n\n💬 Start a fresh conversation.'
@@ -94,7 +74,7 @@ module.exports = {
         }
 
         // Handle stats command
-        if (cleanMessage.toLowerCase() === 'stats') {
+        if (message.toLowerCase() === 'stats') {
             const stats = memory.getStats(senderId);
             const lastActive = new Date(stats.lastActive).toLocaleString('en-PH', {
                 timeZone: 'Asia/Manila'
@@ -115,91 +95,51 @@ module.exports = {
             }, pageAccessToken);
         }
 
-        if (!cleanMessage) {
-            return sendMessage(senderId, {
-                text: '❌ Please provide a question!\n\nExample: ai What is this? https://example.com/image.jpg'
-            }, pageAccessToken);
-        }
-
-        const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n';
+        const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (ChatGPT4)\n・────────────・\n';
         const footer = '\n・────────────・';
 
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
         
-        // Prepare conversation for Gemini
-        let conversation = [];
-        
+        // Prepare prompt with context if available
+        let fullPrompt = message;
         if (context) {
-            // Parse previous messages from context
-            const contextLines = context.split('\n');
-            for (let i = 0; i < contextLines.length; i++) {
-                const line = contextLines[i];
-                if (line.startsWith('User: ')) {
-                    conversation.push({ role: 'user', parts: [{ text: line.substring(6) }] });
-                } else if (line.startsWith('Assistant: ')) {
-                    conversation.push({ role: 'model', parts: [{ text: line.substring(11) }] });
-                }
-            }
+            fullPrompt = `Previous conversation:\n${context}\n\nUser: ${message}\n\nAssistant:`;
         }
-        
-        // Build current user message with image if available
-        const parts = [{ text: cleanMessage }];
-        
-        if (imageUrl) {
-            try {
-                // Fetch and convert image to base64
-                const imageResp = await axios.get(imageUrl, { 
-                    responseType: 'arraybuffer',
-                    timeout: 15000
-                });
-                const imageData = Buffer.from(imageResp.data, 'binary').toString('base64');
-                parts.push({
-                    inline_data: {
-                        mime_type: 'image/jpeg',
-                        data: imageData
-                    }
-                });
-            } catch (imageError) {
-                console.error('Image fetch error:', imageError.message);
-                await sendMessage(senderId, {
-                    text: header + '❌ Failed to fetch image from URL. Please check the URL and try again.' + footer
-                }, pageAccessToken);
-                return;
-            }
-        }
-        
-        // Add current user message
-        conversation.push({ role: 'user', parts });
-        
-        // Prepare payload for Gemini API
-        const payload = {
-            contents: conversation
-        };
 
         let aiResponse = null;
 
         try {
+            // First, load referer to receive cookies
+            const refererResp = await axios.get('https://stablediffusion.fr/chatgpt4');
+            const setCookie = refererResp.headers && refererResp.headers['set-cookie'];
+            const cookieHeader = Array.isArray(setCookie) ? setCookie.join('; ') : undefined;
+
+            // Make request to ChatGPT4 API
             const response = await axios.post(
-                `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
-                payload,
+                'https://stablediffusion.fr/gpt4/predict2',
+                { prompt: fullPrompt },
                 {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                        'Content-Type': 'application/json'
+                        'accept': '*/*',
+                        'content-type': 'application/json',
+                        'origin': 'https://stablediffusion.fr',
+                        'referer': 'https://stablediffusion.fr/chatgpt4',
+                        ...(cookieHeader ? { cookie: cookieHeader } : {}),
+                        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36'
                     },
                     timeout: 45000
                 }
             );
 
-            if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                aiResponse = response.data.candidates[0].content.parts[0].text;
-                console.log(`✅ Gemini API request successful`);
+            if (response.data && response.data.message) {
+                aiResponse = response.data.message;
+                console.log(`✅ ChatGPT4 API request successful`);
             } else {
-                throw new Error('Invalid response from Gemini API');
+                throw new Error('Invalid response from ChatGPT4 API');
             }
         } catch (error) {
-            console.error('Gemini API Error:', error.message);
+            console.error('ChatGPT4 API Error:', error.message);
             await sendMessage(senderId, {
                 text: header + '❌ API request failed. Please try again later.\n\n💡 Tip: The server might be busy!' + footer
             }, pageAccessToken);
@@ -214,7 +154,7 @@ module.exports = {
         }
 
         // Save to conversation memory
-        memory.addMessage(senderId, 'user', cleanMessage);
+        memory.addMessage(senderId, 'user', message);
         memory.addMessage(senderId, 'assistant', aiResponse);
 
         aiResponse = aiResponse.trim();
