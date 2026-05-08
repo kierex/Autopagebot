@@ -14,7 +14,7 @@ module.exports = {
         await sendMessage(senderId, { text: '🎭 Fetching an anime quote...' }, pageAccessToken);
 
         try {
-            const apiUrl = 'https://kryptonite-api-library.onrender.com/api/animequotes';
+            const apiUrl = 'https://kryptonite-api-library.vercel.app/api/animequotes';
             const response = await axios.get(apiUrl);
             const data = response.data;
 
