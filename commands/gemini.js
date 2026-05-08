@@ -2,7 +2,7 @@ const axios = require("axios");
 const { sendMessage } = require('../handles/sendMessage');
 
 // Direct Gemini API configuration
-const GEMINI_API_KEY = 'AIzaSyCKFCGtkOcBcTgxrwGpPvM4gBiHPgia4Ak';
+const GEMINI_API_KEY = 'AIzaSyDUiXWMggX4H7K1kFQ8VzHJi1tlPNeNYE4';
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 module.exports = {
