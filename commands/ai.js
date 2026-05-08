@@ -3,7 +3,7 @@ const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
 // Configuration
-const API_KEY = 'AIzaSyCFzOlGglWV2MThWZcXh_3Fx_V5aYaRQnI';
+const API_KEY = 'AIzaSyCKFCGtkOcBcTgxrwGpPvM4gBiHPgia4Ak';
 const MODEL = "gemini-2.5-flash";
 
 function makeBold(text) {
