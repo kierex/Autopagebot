@@ -14,7 +14,7 @@ module.exports = {
         await sendMessage(senderId, { text: '🦜 Fetching a bird fact...' }, pageAccessToken);
 
         try {
-            const apiUrl = 'https://kryptonite-api-library.onrender.com/api/birdfact';
+            const apiUrl = 'https://kryptonite-api-library.vercel.app/api/birdfact';
             const response = await axios.get(apiUrl);
             const data = response.data;
 
