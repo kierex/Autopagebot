@@ -121,7 +121,7 @@ module.exports = {
             }, pageAccessToken);
         }
 
-        const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (Gemini Vision)\n・────────────・\n';
+        const header = '💬 | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n';
         const footer = '\n・────────────・';
 
         // Build context from conversation history
