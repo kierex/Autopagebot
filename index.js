@@ -766,7 +766,7 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// Webhook handler - MAIN ENTRY POINT FOR BOT MESSAGES
+// Webhook handler - MAIN ENTRY POINT FOR BOT MESSAGES (NO PREFIX REQUIRED)
 app.post('/webhook', async (req, res) => {
     if (req.body.object !== 'page') return res.sendStatus(404);
     console.log(`📨 Webhook received: ${req.body.entry?.length || 0} entries`);
@@ -794,11 +794,18 @@ app.post('/webhook', async (req, res) => {
                 }
                 
                 if (event.message) {
-                    // Check if message is a command (starts with !)
+                    // Check if message is a command (NO PREFIX - any message that matches a command name)
                     const messageText = event.message?.text;
-                    if (messageText && messageText.startsWith('!')) {
-                        const commandName = messageText.slice(1).split(' ')[0].toLowerCase();
-                        trackCommandExecution(commandName, senderId, pageId);
+                    if (messageText) {
+                        // Get the first word as potential command
+                        const potentialCommand = messageText.trim().split(' ')[0].toLowerCase();
+                        const command = findCommand(potentialCommand);
+                        
+                        if (command) {
+                            // This is a command - track it
+                            trackCommandExecution(command.name, senderId, pageId);
+                            console.log(`🎯 Command detected: ${command.name} from message: "${messageText}"`);
+                        }
                     }
                     await handleMessage(event, tokenData.token, pageId);
                 } else if (event.postback) {
@@ -857,7 +864,7 @@ const start = async () => {
         const existingCommands = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
 
         if (existingCommands.length === 0) {
-            const sampleCommand = `// Sample command with aliases and cooldown
+            const sampleCommand = `// Sample command with aliases and cooldown (NO PREFIX REQUIRED)
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
@@ -871,7 +878,7 @@ module.exports = {
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
         await sendMessage(senderId, { 
-            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 2.1\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds\\n\\n💡 Tip: You can also use: ping, pong, or alive' 
+            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 2.1\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds\\n\\n💡 Tip: Just type "ping" to use this command (no prefix needed!)' 
         }, pageAccessToken);
     }
 };`;
@@ -892,6 +899,7 @@ module.exports = {
             console.log(`👥 Unique Users: ${userStats.uniqueUsers?.length || 0}`);
             console.log(`💬 Active Conversations: ${memoryManager.getTotalConversations()}`);
             console.log(`⏱️ Cooldown Range: 0-20 seconds`);
+            console.log(`🎯 Command Prefix: NONE - Just type the command name directly!`);
             console.log(`📅 Server Started: ${startDate}`);
             console.log(`💡 Dashboard: http://localhost:${PORT}`);
             console.log(`📚 Tutorial: http://localhost:${PORT}#tutorial`);
