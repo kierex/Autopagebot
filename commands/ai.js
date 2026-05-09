@@ -2,17 +2,11 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// Configuration - Primary Gemini API
-const PRIMARY_API_KEY = 'AIzaSyDUiXWMggX4H7K1kFQ8VzHJi1tlPNeNYE4';
-const SECONDARY_API_KEY = 'AIzaSyBTPvMLsIAnAo8da4XMVR5RQ4sJB-t_WJw';
-const TERTIARY_API_KEY = 'AIzaSyDlVfmiRTKkNiaW4-At74LWx49YhIIugGQ';
-const MODEL = "gemini-2.5-flash";
+// Primary API - Sakibin
+const SAKIBIN_API_URL = 'https://sakibin.site/api/ai/chat';
 
-// Secondary backup API (Norch)
-const SECONDARY_API_URL = 'https://norch-project.gleeze.com/api/gemini';
-
-// Array of API keys for rotation
-const API_KEYS = [PRIMARY_API_KEY, SECONDARY_API_KEY, TERTIARY_API_KEY];
+// Secondary backup API - Norch
+const NORCH_API_URL = 'https://norch-project.gleeze.com/api/gemini';
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -51,73 +45,37 @@ function extractImageUrl(message) {
   return match ? match[0] : null;
 }
 
-// Function to call primary Gemini API with key rotation
-async function callPrimaryGeminiAPI(conversation, imageUrl = null) {
-  let lastError = null;
-  
-  for (let i = 0; i < API_KEYS.length; i++) {
-    const apiKey = API_KEYS[i];
-    try {
-      let payload = { contents: conversation };
-      
-      // If there's an image, we need to handle it differently
-      if (imageUrl) {
-        // Fetch and convert image to base64
-        const imageResp = await axios.get(imageUrl, { 
-          responseType: 'arraybuffer',
-          timeout: 15000
-        });
-        const imageData = Buffer.from(imageResp.data, 'binary').toString('base64');
-        
-        // Modify the last user message to include image
-        const lastUserIndex = conversation.length - 1;
-        if (conversation[lastUserIndex]?.role === 'user') {
-          conversation[lastUserIndex].parts = [
-            { text: conversation[lastUserIndex].parts[0].text },
-            {
-              inline_data: {
-                mime_type: 'image/jpeg',
-                data: imageData
-              }
-            }
-          ];
-          payload.contents = conversation;
-        }
-      }
-      
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-        payload,
-        {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            'Content-Type': 'application/json'
-          },
-          timeout: 30000
-        }
-      );
-
-      if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-        console.log(`✅ Primary API successful with key index ${i}`);
-        return {
-          response: response.data.candidates[0].content.parts[0].text,
-          apiType: 'primary'
-        };
-      } else {
-        throw new Error('Invalid response from Gemini API');
-      }
-    } catch (error) {
-      console.error(`Primary API failed with key index ${i}:`, error.message);
-      lastError = error;
-      continue; // Try next API key
+// Function to call primary Sakibin API
+async function callSakibinAPI(prompt, imageUrl = null) {
+  try {
+    // Sakibin API doesn't support images, so if image is provided, we'll mention it in the prompt
+    let finalPrompt = prompt;
+    if (imageUrl) {
+      finalPrompt = `[Image URL: ${imageUrl}] ${prompt}`;
     }
+    
+    const response = await axios.get(SAKIBIN_API_URL, {
+      params: { message: finalPrompt },
+      timeout: 30000
+    });
+    
+    if (response.data && response.data.reply) {
+      console.log(`✅ Sakibin API successful`);
+      return {
+        response: response.data.reply,
+        apiType: 'primary'
+      };
+    } else {
+      throw new Error('Invalid response from Sakibin API');
+    }
+  } catch (error) {
+    console.error('Sakibin API failed:', error.message);
+    throw error;
   }
-  
-  throw lastError || new Error('All primary API keys failed');
 }
 
-// Function to call secondary backup API
-async function callSecondaryAPI(prompt, imageUrl = null) {
+// Function to call secondary Norch API
+async function callNorchAPI(prompt, imageUrl = null) {
   try {
     const params = {
       prompt: prompt
@@ -127,22 +85,22 @@ async function callSecondaryAPI(prompt, imageUrl = null) {
       params.imageurl = imageUrl;
     }
     
-    const response = await axios.get(SECONDARY_API_URL, {
+    const response = await axios.get(NORCH_API_URL, {
       params: params,
       timeout: 45000
     });
     
     if (response.data && response.data.response) {
-      console.log(`✅ Secondary API successful`);
+      console.log(`✅ Norch API successful`);
       return {
         response: response.data.response,
         apiType: 'secondary'
       };
     } else {
-      throw new Error('Invalid response from secondary API');
+      throw new Error('Invalid response from Norch API');
     }
   } catch (error) {
-    console.error('Secondary API failed:', error.message);
+    console.error('Norch API failed:', error.message);
     throw error;
   }
 }
@@ -168,7 +126,7 @@ module.exports = {
         if (!args.length) {
             const stats = memory.getStats(senderId);
             return sendMessage(senderId, { 
-                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜 (Gemini Vision)
+                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜
 
 📝 Usage: ai [your question]
 
@@ -230,43 +188,30 @@ module.exports = {
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
 
-        // Prepare conversation for Gemini
-        let conversation = [];
-
+        // Prepare conversation prompt with context
+        let fullPrompt = cleanMessage || "Describe this image";
         if (context) {
-            // Parse previous messages from context
-            const contextLines = context.split('\n');
-            for (let i = 0; i < contextLines.length; i++) {
-                const line = contextLines[i];
-                if (line.startsWith('User: ')) {
-                    conversation.push({ role: 'user', parts: [{ text: line.substring(6) }] });
-                } else if (line.startsWith('Assistant: ')) {
-                    conversation.push({ role: 'model', parts: [{ text: line.substring(11) }] });
-                }
-            }
+            fullPrompt = `Previous conversation:\n${context}\n\nUser: ${fullPrompt}\n\nAssistant:`;
         }
-
-        // Add current user message
-        conversation.push({ role: 'user', parts: [{ text: cleanMessage || "Describe this image" }] });
 
         let aiResponse = null;
         let apiUsed = null;
 
         try {
-            // Try primary API with key rotation first
-            const primaryResult = await callPrimaryGeminiAPI(conversation, imageUrl);
+            // Try primary Sakibin API first
+            const primaryResult = await callSakibinAPI(fullPrompt, imageUrl);
             aiResponse = primaryResult.response;
             apiUsed = primaryResult.apiType;
         } catch (primaryError) {
-            console.error('All primary APIs failed, trying secondary backup:', primaryError.message);
+            console.error('Sakibin API failed, trying Norch backup:', primaryError.message);
             
-            // Try secondary API as fallback
+            // Try secondary Norch API as fallback
             try {
-                const secondaryResult = await callSecondaryAPI(cleanMessage || "Describe this image", imageUrl);
+                const secondaryResult = await callNorchAPI(cleanMessage || "Describe this image", imageUrl);
                 aiResponse = secondaryResult.response;
-                apiUsed = 'secondary (backup)';
+                apiUsed = 'secondary';
             } catch (secondaryError) {
-                console.error('Secondary API also failed:', secondaryError.message);
+                console.error('Norch API also failed:', secondaryError.message);
                 await sendMessage(senderId, {
                     text: header + '❌ All APIs are currently unavailable. Please try again later.\n\n💡 Both primary and backup services are down.' + footer
                 }, pageAccessToken);
@@ -290,7 +235,7 @@ module.exports = {
 
         // Add API indicator to header
         const apiIndicator = apiUsed === 'primary' ? '✨' : '🔄';
-        const modifiedHeader = `${apiIndicator} | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁${apiUsed === 'secondary (backup)' ? ' (Backup)' : ''}\n・────────────・\n`;
+        const modifiedHeader = `${apiIndicator} | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁${apiUsed === 'secondary' ? ' (Backup)' : ''}\n・────────────・\n`;
 
         const chunks = splitMessage(aiResponse);
 
