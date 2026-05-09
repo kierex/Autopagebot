@@ -2,11 +2,11 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// Primary API - Sakibin
-const SAKIBIN_API_URL = 'https://sakibin.site/api/ai/chat';
+// Primary API - Norch (Gemini 2.5 Flash Lite)
+const NORCH_API_URL = 'https://norch-project.gleeze.com/api/gemini/2.5/flash-lite';
 
-// Secondary backup API - Norch
-const NORCH_API_URL = 'https://norch-project.gleeze.com/api/gemini';
+// Secondary backup API - Sakibin
+const SAKIBIN_API_URL = 'https://sakibin.site/api/ai/chat';
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -45,7 +45,39 @@ function extractImageUrl(message) {
   return match ? match[0] : null;
 }
 
-// Function to call primary Sakibin API
+// Function to call primary Norch API (Gemini 2.5 Flash Lite)
+async function callNorchAPI(prompt, imageUrl = null) {
+  try {
+    const params = {
+      prompt: prompt
+    };
+    
+    if (imageUrl) {
+      params.imageurl = imageUrl;
+    }
+    
+    const response = await axios.get(NORCH_API_URL, {
+      params: params,
+      timeout: 45000
+    });
+    
+    if (response.data && response.data.response) {
+      console.log(`✅ Norch API (${response.data.model}) successful`);
+      return {
+        response: response.data.response,
+        apiType: 'primary',
+        model: response.data.model
+      };
+    } else {
+      throw new Error('Invalid response from Norch API');
+    }
+  } catch (error) {
+    console.error('Norch API failed:', error.message);
+    throw error;
+  }
+}
+
+// Function to call secondary Sakibin API
 async function callSakibinAPI(prompt, imageUrl = null) {
   try {
     // Sakibin API doesn't support images, so if image is provided, we'll mention it in the prompt
@@ -63,44 +95,13 @@ async function callSakibinAPI(prompt, imageUrl = null) {
       console.log(`✅ Sakibin API successful`);
       return {
         response: response.data.reply,
-        apiType: 'primary'
+        apiType: 'secondary'
       };
     } else {
       throw new Error('Invalid response from Sakibin API');
     }
   } catch (error) {
     console.error('Sakibin API failed:', error.message);
-    throw error;
-  }
-}
-
-// Function to call secondary Norch API
-async function callNorchAPI(prompt, imageUrl = null) {
-  try {
-    const params = {
-      prompt: prompt
-    };
-    
-    if (imageUrl) {
-      params.imageurl = imageUrl;
-    }
-    
-    const response = await axios.get(NORCH_API_URL, {
-      params: params,
-      timeout: 45000
-    });
-    
-    if (response.data && response.data.response) {
-      console.log(`✅ Norch API successful`);
-      return {
-        response: response.data.response,
-        apiType: 'secondary'
-      };
-    } else {
-      throw new Error('Invalid response from Norch API');
-    }
-  } catch (error) {
-    console.error('Norch API failed:', error.message);
     throw error;
   }
 }
@@ -126,7 +127,7 @@ module.exports = {
         if (!args.length) {
             const stats = memory.getStats(senderId);
             return sendMessage(senderId, { 
-                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜
+                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜 (Gemini 2.5 Flash Lite)
 
 📝 Usage: ai [your question]
 
@@ -188,7 +189,7 @@ module.exports = {
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
 
-        // Prepare conversation prompt with context
+        // Prepare conversation prompt with context (for backup API)
         let fullPrompt = cleanMessage || "Describe this image";
         if (context) {
             fullPrompt = `Previous conversation:\n${context}\n\nUser: ${fullPrompt}\n\nAssistant:`;
@@ -196,22 +197,24 @@ module.exports = {
 
         let aiResponse = null;
         let apiUsed = null;
+        let modelInfo = null;
 
         try {
-            // Try primary Sakibin API first
-            const primaryResult = await callSakibinAPI(fullPrompt, imageUrl);
+            // Try primary Norch API first (Gemini 2.5 Flash Lite)
+            const primaryResult = await callNorchAPI(cleanMessage || "Describe this image", imageUrl);
             aiResponse = primaryResult.response;
             apiUsed = primaryResult.apiType;
+            modelInfo = primaryResult.model;
         } catch (primaryError) {
-            console.error('Sakibin API failed, trying Norch backup:', primaryError.message);
+            console.error('Norch API failed, trying Sakibin backup:', primaryError.message);
             
-            // Try secondary Norch API as fallback
+            // Try secondary Sakibin API as fallback
             try {
-                const secondaryResult = await callNorchAPI(cleanMessage || "Describe this image", imageUrl);
+                const secondaryResult = await callSakibinAPI(fullPrompt, imageUrl);
                 aiResponse = secondaryResult.response;
                 apiUsed = 'secondary';
             } catch (secondaryError) {
-                console.error('Norch API also failed:', secondaryError.message);
+                console.error('Sakibin API also failed:', secondaryError.message);
                 await sendMessage(senderId, {
                     text: header + '❌ All APIs are currently unavailable. Please try again later.\n\n💡 Both primary and backup services are down.' + footer
                 }, pageAccessToken);
@@ -233,9 +236,16 @@ module.exports = {
         aiResponse = aiResponse.trim();
         aiResponse = makeBold(aiResponse);
 
-        // Add API indicator to header
-        const apiIndicator = apiUsed === 'primary' ? '✨' : '🔄';
-        const modifiedHeader = `${apiIndicator} | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁${apiUsed === 'secondary' ? ' (Backup)' : ''}\n・────────────・\n`;
+        // Add API indicator to header with model info for primary
+        let apiIndicator = apiUsed === 'primary' ? '✨' : '🔄';
+        let modelText = '';
+        if (apiUsed === 'primary' && modelInfo) {
+            modelText = ` (${modelInfo})`;
+        } else if (apiUsed === 'secondary') {
+            modelText = ' (Backup)';
+        }
+        
+        const modifiedHeader = `${apiIndicator} | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁${modelText}\n・────────────・\n`;
 
         const chunks = splitMessage(aiResponse);
 
