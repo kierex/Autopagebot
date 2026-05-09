@@ -2,9 +2,17 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// Configuration
-const API_KEY = 'AIzaSyDUiXWMggX4H7K1kFQ8VzHJi1tlPNeNYE4';
+// Configuration - Primary Gemini API
+const PRIMARY_API_KEY = 'AIzaSyDUiXWMggX4H7K1kFQ8VzHJi1tlPNeNYE4';
+const SECONDARY_API_KEY = 'AIzaSyBTPvMLsIAnAo8da4XMVR5RQ4sJB-t_WJw';
+const TERTIARY_API_KEY = 'AIzaSyDlVfmiRTKkNiaW4-At74LWx49YhIIugGQ';
 const MODEL = "gemini-2.5-flash";
+
+// Secondary backup API (Norch)
+const SECONDARY_API_URL = 'https://norch-project.gleeze.com/api/gemini';
+
+// Array of API keys for rotation
+const API_KEYS = [PRIMARY_API_KEY, SECONDARY_API_KEY, TERTIARY_API_KEY];
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -38,10 +46,105 @@ function splitMessage(text) {
 
 // Function to extract image URL from message if present
 function extractImageUrl(message) {
-  // Check for common image URL patterns
   const urlPattern = /(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp))/i;
   const match = message.match(urlPattern);
   return match ? match[0] : null;
+}
+
+// Function to call primary Gemini API with key rotation
+async function callPrimaryGeminiAPI(conversation, imageUrl = null) {
+  let lastError = null;
+  
+  for (let i = 0; i < API_KEYS.length; i++) {
+    const apiKey = API_KEYS[i];
+    try {
+      let payload = { contents: conversation };
+      
+      // If there's an image, we need to handle it differently
+      if (imageUrl) {
+        // Fetch and convert image to base64
+        const imageResp = await axios.get(imageUrl, { 
+          responseType: 'arraybuffer',
+          timeout: 15000
+        });
+        const imageData = Buffer.from(imageResp.data, 'binary').toString('base64');
+        
+        // Modify the last user message to include image
+        const lastUserIndex = conversation.length - 1;
+        if (conversation[lastUserIndex]?.role === 'user') {
+          conversation[lastUserIndex].parts = [
+            { text: conversation[lastUserIndex].parts[0].text },
+            {
+              inline_data: {
+                mime_type: 'image/jpeg',
+                data: imageData
+              }
+            }
+          ];
+          payload.contents = conversation;
+        }
+      }
+      
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
+        payload,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        console.log(`✅ Primary API successful with key index ${i}`);
+        return {
+          response: response.data.candidates[0].content.parts[0].text,
+          apiType: 'primary'
+        };
+      } else {
+        throw new Error('Invalid response from Gemini API');
+      }
+    } catch (error) {
+      console.error(`Primary API failed with key index ${i}:`, error.message);
+      lastError = error;
+      continue; // Try next API key
+    }
+  }
+  
+  throw lastError || new Error('All primary API keys failed');
+}
+
+// Function to call secondary backup API
+async function callSecondaryAPI(prompt, imageUrl = null) {
+  try {
+    const params = {
+      prompt: prompt
+    };
+    
+    if (imageUrl) {
+      params.imageurl = imageUrl;
+    }
+    
+    const response = await axios.get(SECONDARY_API_URL, {
+      params: params,
+      timeout: 45000
+    });
+    
+    if (response.data && response.data.response) {
+      console.log(`✅ Secondary API successful`);
+      return {
+        response: response.data.response,
+        apiType: 'secondary'
+      };
+    } else {
+      throw new Error('Invalid response from secondary API');
+    }
+  } catch (error) {
+    console.error('Secondary API failed:', error.message);
+    throw error;
+  }
 }
 
 module.exports = {
@@ -115,7 +218,7 @@ module.exports = {
             }, pageAccessToken);
         }
 
-        if (!cleanMessage) {
+        if (!cleanMessage && !imageUrl) {
             return sendMessage(senderId, {
                 text: '❌ Please provide a question!\n\nExample: ai What is this? https://example.com/image.jpg'
             }, pageAccessToken);
@@ -143,67 +246,32 @@ module.exports = {
             }
         }
 
-        // Build current user message with image if available
-        const parts = [{ text: cleanMessage }];
+        // Add current user message
+        conversation.push({ role: 'user', parts: [{ text: cleanMessage || "Describe this image" }] });
 
-        if (imageUrl) {
+        let aiResponse = null;
+        let apiUsed = null;
+
+        try {
+            // Try primary API with key rotation first
+            const primaryResult = await callPrimaryGeminiAPI(conversation, imageUrl);
+            aiResponse = primaryResult.response;
+            apiUsed = primaryResult.apiType;
+        } catch (primaryError) {
+            console.error('All primary APIs failed, trying secondary backup:', primaryError.message);
+            
+            // Try secondary API as fallback
             try {
-                // Fetch and convert image to base64
-                const imageResp = await axios.get(imageUrl, { 
-                    responseType: 'arraybuffer',
-                    timeout: 15000
-                });
-                const imageData = Buffer.from(imageResp.data, 'binary').toString('base64');
-                parts.push({
-                    inline_data: {
-                        mime_type: 'image/jpeg',
-                        data: imageData
-                    }
-                });
-            } catch (imageError) {
-                console.error('Image fetch error:', imageError.message);
+                const secondaryResult = await callSecondaryAPI(cleanMessage || "Describe this image", imageUrl);
+                aiResponse = secondaryResult.response;
+                apiUsed = 'secondary (backup)';
+            } catch (secondaryError) {
+                console.error('Secondary API also failed:', secondaryError.message);
                 await sendMessage(senderId, {
-                    text: header + '❌ Failed to fetch image from URL. Please check the URL and try again.' + footer
+                    text: header + '❌ All APIs are currently unavailable. Please try again later.\n\n💡 Both primary and backup services are down.' + footer
                 }, pageAccessToken);
                 return;
             }
-        }
-
-        // Add current user message
-        conversation.push({ role: 'user', parts });
-
-        // Prepare payload for Gemini API
-        const payload = {
-            contents: conversation
-        };
-
-        let aiResponse = null;
-
-        try {
-            const response = await axios.post(
-                `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
-                payload,
-                {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 45000
-                }
-            );
-
-            if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                aiResponse = response.data.candidates[0].content.parts[0].text;
-                console.log(`✅ Gemini API request successful`);
-            } else {
-                throw new Error('Invalid response from Gemini API');
-            }
-        } catch (error) {
-            console.error('Gemini API Error:', error.message);
-            await sendMessage(senderId, {
-                text: header + '❌ API request failed. Please try again later.\n\n💡 Tip: The server might be busy!' + footer
-            }, pageAccessToken);
-            return;
         }
 
         if (!aiResponse) {
@@ -214,11 +282,15 @@ module.exports = {
         }
 
         // Save to conversation memory
-        memory.addMessage(senderId, 'user', cleanMessage);
+        memory.addMessage(senderId, 'user', cleanMessage || "Image analysis request");
         memory.addMessage(senderId, 'assistant', aiResponse);
 
         aiResponse = aiResponse.trim();
         aiResponse = makeBold(aiResponse);
+
+        // Add API indicator to header
+        const apiIndicator = apiUsed === 'primary' ? '✨' : '🔄';
+        const modifiedHeader = `${apiIndicator} | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁${apiUsed === 'secondary (backup)' ? ' (Backup)' : ''}\n・────────────・\n`;
 
         const chunks = splitMessage(aiResponse);
 
@@ -227,7 +299,7 @@ module.exports = {
             const isLast = i === chunks.length - 1;
 
             let fullMessage = chunks[i];
-            if (isFirst) fullMessage = header + fullMessage;
+            if (isFirst) fullMessage = modifiedHeader + fullMessage;
             if (isLast) fullMessage = fullMessage + footer;
 
             await sendMessage(senderId, { text: fullMessage }, pageAccessToken);
