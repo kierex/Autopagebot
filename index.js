@@ -21,175 +21,9 @@ if (!fs.existsSync(STORAGE_DIR)) {
 const START_TIME_FILE = path.join(STORAGE_DIR, 'start_time.json');
 const STATS_FILE = path.join(STORAGE_DIR, 'stats.json');
 const CONVERSATIONS_FILE = path.join(STORAGE_DIR, 'convo.json');
-const COMMAND_STATS_FILE = path.join(STORAGE_DIR, 'command_stats.json');
-const USER_STATS_FILE = path.join(STORAGE_DIR, 'user_stats.json');
 
 // Update tokenManager to use storage folder
 process.env.TOKENS_FILE_PATH = path.join(STORAGE_DIR, 'tokens.json');
-
-// ========== COMMAND STATISTICS TRACKING ==========
-let commandStats = {
-    totalCommandsExecuted: 0,
-    commandUsage: {},
-    commandHistory: [],
-    lastUpdated: Date.now()
-};
-
-let userStats = {
-    uniqueUsers: [],
-    totalMessages: 0,
-    lastActivity: {},
-    userCommandCount: {}
-};
-
-// Load command stats from file
-function loadCommandStats() {
-    try {
-        if (fs.existsSync(COMMAND_STATS_FILE)) {
-            const data = JSON.parse(fs.readFileSync(COMMAND_STATS_FILE, 'utf8'));
-            commandStats = {
-                totalCommandsExecuted: data.totalCommandsExecuted || 0,
-                commandUsage: data.commandUsage || {},
-                commandHistory: data.commandHistory || [],
-                lastUpdated: data.lastUpdated || Date.now()
-            };
-            console.log(`📊 Command stats loaded: ${commandStats.totalCommandsExecuted} total commands executed`);
-        } else {
-            saveCommandStats();
-        }
-    } catch (error) {
-        console.error('Error loading command stats:', error.message);
-        saveCommandStats();
-    }
-}
-
-function saveCommandStats() {
-    try {
-        commandStats.lastUpdated = Date.now();
-        fs.writeFileSync(COMMAND_STATS_FILE, JSON.stringify(commandStats, null, 2));
-    } catch (error) {
-        console.error('Error saving command stats:', error.message);
-    }
-}
-
-// Load user stats from file
-function loadUserStats() {
-    try {
-        if (fs.existsSync(USER_STATS_FILE)) {
-            const data = JSON.parse(fs.readFileSync(USER_STATS_FILE, 'utf8'));
-            userStats = {
-                uniqueUsers: data.uniqueUsers || [],
-                totalMessages: data.totalMessages || 0,
-                lastActivity: data.lastActivity || {},
-                userCommandCount: data.userCommandCount || {}
-            };
-            console.log(`👥 User stats loaded: ${userStats.uniqueUsers.length} unique users, ${userStats.totalMessages} total messages`);
-        } else {
-            saveUserStats();
-        }
-    } catch (error) {
-        console.error('Error loading user stats:', error.message);
-        saveUserStats();
-    }
-}
-
-function saveUserStats() {
-    try {
-        fs.writeFileSync(USER_STATS_FILE, JSON.stringify(userStats, null, 2));
-    } catch (error) {
-        console.error('Error saving user stats:', error.message);
-    }
-}
-
-// Track command execution from bot
-function trackCommandExecution(commandName, userId, pageId) {
-    if (!commandName) return;
-    
-    // Update command usage count
-    commandStats.commandUsage[commandName] = (commandStats.commandUsage[commandName] || 0) + 1;
-    commandStats.totalCommandsExecuted++;
-    
-    // Add to history
-    commandStats.commandHistory.push({
-        command: commandName,
-        userId: userId || 'unknown',
-        pageId: pageId || 'unknown',
-        timestamp: Date.now()
-    });
-    
-    // Keep only last 1000 history entries
-    if (commandStats.commandHistory.length > 1000) {
-        commandStats.commandHistory = commandStats.commandHistory.slice(-1000);
-    }
-    
-    saveCommandStats();
-    
-    // Track user command count
-    if (userId) {
-        if (!userStats.userCommandCount[userId]) {
-            userStats.userCommandCount[userId] = {};
-        }
-        userStats.userCommandCount[userId][commandName] = (userStats.userCommandCount[userId][commandName] || 0) + 1;
-        
-        // Track unique user
-        if (!userStats.uniqueUsers.includes(userId)) {
-            userStats.uniqueUsers.push(userId);
-        }
-        userStats.lastActivity[userId] = Date.now();
-        saveUserStats();
-    }
-    
-    console.log(`📈 Command tracked: ${commandName} by user ${userId || 'unknown'} (Total: ${commandStats.commandUsage[commandName]} uses)`);
-}
-
-// Track message received
-function trackMessageReceived(userId) {
-    if (!userId) return;
-    
-    userStats.totalMessages++;
-    if (!userStats.uniqueUsers.includes(userId)) {
-        userStats.uniqueUsers.push(userId);
-    }
-    userStats.lastActivity[userId] = Date.now();
-    saveUserStats();
-}
-
-// Get weekly activity data
-function getWeeklyActivity() {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const today = new Date();
-    const weeklyData = [];
-    
-    // Get last 7 days of activity from command history
-    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    const recentCommands = commandStats.commandHistory.filter(c => c.timestamp > sevenDaysAgo);
-    
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        const dayName = days[date.getDay()];
-        const dayStart = new Date(date);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(date);
-        dayEnd.setHours(23, 59, 59, 999);
-        
-        // Count commands for this day
-        const dayCommands = recentCommands.filter(c => {
-            return c.timestamp >= dayStart.getTime() && c.timestamp <= dayEnd.getTime();
-        }).length;
-        
-        // Count messages (estimate based on commands ratio)
-        const dayMessages = Math.max(dayCommands, Math.floor(Math.random() * 20) + 5);
-        
-        weeklyData.push({
-            day: dayName,
-            date: date.toISOString().split('T')[0],
-            messages: dayMessages,
-            commands: dayCommands
-        });
-    }
-    return weeklyData;
-}
 
 // ========== MEMORY MANAGER (Conversation Storage) ==========
 class MemoryManager {
@@ -369,7 +203,7 @@ function getServerUptime() {
     return Math.floor((Date.now() - serverStartTime) / 1000);
 }
 
-// Message stats (legacy)
+// Message stats
 let messageStats = { totalMessages: 0, lastReset: Date.now() };
 function loadStats() {
     try {
@@ -524,9 +358,7 @@ app.get('/health', (req, res) => {
         commandsLoaded: getCommandCount(),
         activeCooldowns: cooldowns.size,
         serverStartTime: serverStartTime,
-        totalMessages: userStats.totalMessages,
-        totalCommands: commandStats.totalCommandsExecuted,
-        uniqueUsers: userStats.uniqueUsers.length,
+        totalMessages: messageStats.totalMessages,
         conversations: memoryManager.getTotalConversations()
     });
 });
@@ -538,45 +370,6 @@ app.get('/api/server/info', (req, res) => {
 
 app.get('/api/server/uptime', (req, res) => {
     res.json({ uptime: getServerUptime(), startTime: serverStartTime });
-});
-
-// Analytics API - Get all stats for dashboard
-app.get('/api/analytics', (req, res) => {
-    // Get top commands
-    const topCommands = Object.entries(commandStats.commandUsage)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([name, count]) => ({ name, count }));
-    
-    // Get weekly activity
-    const weeklyActivity = getWeeklyActivity();
-    
-    res.json({
-        totalMessages: userStats.totalMessages,
-        uniqueUsers: userStats.uniqueUsers.length,
-        totalCommandsExecuted: commandStats.totalCommandsExecuted,
-        commandUsage: commandStats.commandUsage,
-        topCommands: topCommands,
-        weeklyActivity: weeklyActivity,
-        lastUpdated: commandStats.lastUpdated,
-        activeSessions: tokenManager.getSessionCount(),
-        serverUptime: getServerUptime(),
-        commandHistory: commandStats.commandHistory.slice(-50)
-    });
-});
-
-// Track command from frontend demo
-app.post('/api/track-command', (req, res) => {
-    const { commandName, userId } = req.body;
-    if (!commandName) {
-        return res.status(400).json({ error: 'Command name required' });
-    }
-    
-    const demoUserId = userId || `demo_${Date.now()}`;
-    trackCommandExecution(commandName, demoUserId, 'demo_page');
-    
-    console.log(`📈 Demo command tracked: ${commandName}`);
-    res.json({ success: true, message: `Tracked: ${commandName}` });
 });
 
 // Sessions API
@@ -667,7 +460,7 @@ app.get('/api/commands/:commandName', (req, res) => {
     res.json(command);
 });
 
-// Stats API
+// Stats API (simple)
 app.get('/api/stats', async (req, res) => {
     const sessions = await tokenManager.getAllSessions();
     const commandsCount = getCommandCount();
@@ -677,10 +470,8 @@ app.get('/api/stats', async (req, res) => {
         serverUptime: getServerUptime(),
         serverStartTime: serverStartTime,
         version: '2.1',
-        totalMessages: userStats.totalMessages,
-        totalCommands: commandStats.totalCommandsExecuted,
-        uniqueUsers: userStats.uniqueUsers.length,
-        commandUsage: commandStats.commandUsage,
+        totalMessages: messageStats.totalMessages,
+        totalCommands: commandsCount,
         verifyToken: VERIFY_TOKEN,
         activeCooldowns: cooldowns.size,
         totalConversations: memoryManager.getTotalConversations()
@@ -766,7 +557,7 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// Webhook handler - MAIN ENTRY POINT FOR BOT MESSAGES (NO PREFIX REQUIRED)
+// Webhook handler - MAIN ENTRY POINT FOR BOT MESSAGES
 app.post('/webhook', async (req, res) => {
     if (req.body.object !== 'page') return res.sendStatus(404);
     console.log(`📨 Webhook received: ${req.body.entry?.length || 0} entries`);
@@ -785,7 +576,6 @@ app.post('/webhook', async (req, res) => {
                 const senderId = event.sender?.id;
                 if (senderId) {
                     // Track message received
-                    trackMessageReceived(senderId);
                     incrementMessageCount();
                     
                     // Store in memory manager
@@ -794,19 +584,6 @@ app.post('/webhook', async (req, res) => {
                 }
                 
                 if (event.message) {
-                    // Check if message is a command (NO PREFIX - any message that matches a command name)
-                    const messageText = event.message?.text;
-                    if (messageText) {
-                        // Get the first word as potential command
-                        const potentialCommand = messageText.trim().split(' ')[0].toLowerCase();
-                        const command = findCommand(potentialCommand);
-                        
-                        if (command) {
-                            // This is a command - track it
-                            trackCommandExecution(command.name, senderId, pageId);
-                            console.log(`🎯 Command detected: ${command.name} from message: "${messageText}"`);
-                        }
-                    }
                     await handleMessage(event, tokenData.token, pageId);
                 } else if (event.postback) {
                     await handlePostback(event, tokenData.token, pageId);
@@ -848,8 +625,6 @@ const start = async () => {
     try {
         loadServerStartTime();
         loadStats();
-        loadCommandStats();
-        loadUserStats();
         await tokenManager.loadTokens();
 
         const dirs = ['public', 'commands', 'temp', 'memory', 'storage'];
@@ -864,7 +639,7 @@ const start = async () => {
         const existingCommands = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
 
         if (existingCommands.length === 0) {
-            const sampleCommand = `// Sample command with aliases and cooldown (NO PREFIX REQUIRED)
+            const sampleCommand = `// Sample command with aliases and cooldown
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
@@ -878,7 +653,7 @@ module.exports = {
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
         await sendMessage(senderId, { 
-            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 2.1\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds\\n\\n💡 Tip: Just type "ping" to use this command (no prefix needed!)' 
+            text: '🏓 Pong! Bot is alive and running.\\n\\n⚡ Response time: Instant\\n🤖 Version: 2.1\\n📡 Status: Online\\n⏱️ Cooldown: 3 seconds\\n\\n💡 Tip: Just type "ping" to use this command!' 
         }, pageAccessToken);
     }
 };`;
@@ -894,12 +669,9 @@ module.exports = {
             console.log(`🔐 Verify Token: ${VERIFY_TOKEN}`);
             console.log(`📊 Active Sessions: ${tokenManager.getSessionCount() || 0}`);
             console.log(`📚 Commands Loaded: ${getCommandCount()}`);
-            console.log(`📊 Total Messages: ${userStats.totalMessages || 0}`);
-            console.log(`📈 Total Commands Executed: ${commandStats.totalCommandsExecuted || 0}`);
-            console.log(`👥 Unique Users: ${userStats.uniqueUsers?.length || 0}`);
+            console.log(`📊 Total Messages: ${messageStats.totalMessages || 0}`);
             console.log(`💬 Active Conversations: ${memoryManager.getTotalConversations()}`);
             console.log(`⏱️ Cooldown Range: 0-20 seconds`);
-            console.log(`🎯 Command Prefix: NONE - Just type the command name directly!`);
             console.log(`📅 Server Started: ${startDate}`);
             console.log(`💡 Dashboard: http://localhost:${PORT}`);
             console.log(`📚 Tutorial: http://localhost:${PORT}#tutorial`);
