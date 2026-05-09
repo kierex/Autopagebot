@@ -64,6 +64,20 @@ body.light-mode .analytics-card {
     background: white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
+body.light-mode .session-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+}
+body.light-mode .rule-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+}
+body.light-mode .top-command-item {
+    background: #f8fafc;
+}
+body.light-mode .distribution-bar {
+    background: #e2e8f0;
+}
 
 /* ========== DARK MODE ========== */
 body.dark-mode {
@@ -103,6 +117,20 @@ body.dark-mode .config-row {
 }
 body.dark-mode .analytics-card {
     background: #1a1c2e;
+}
+body.dark-mode .session-card {
+    background: #1a1c2e;
+    border: 1px solid #2d2d44;
+}
+body.dark-mode .rule-card {
+    background: #1a1c2e;
+    border: 1px solid #2d2d44;
+}
+body.dark-mode .top-command-item {
+    background: #1a1c2e;
+}
+body.dark-mode .distribution-bar {
+    background: #2d2d44;
 }
 
 /* ========== LAYOUT & SIDEBAR (FIXED + SMOOTH) ========== */
@@ -307,6 +335,7 @@ body.dark-mode .analytics-card {
     display: block;
 }
 
+/* Header */
 .header {
     text-align: center;
     margin-bottom: 25px;
@@ -327,6 +356,7 @@ body.dark-mode .analytics-card {
     margin-left: 8px;
 }
 
+/* Dashboard Stats */
 .dashboard-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -360,6 +390,7 @@ body.dark-mode .analytics-card {
     word-break: break-all;
 }
 
+/* Cards */
 .card {
     border-radius: 24px;
     padding: 25px;
@@ -407,12 +438,20 @@ body.dark-mode .analytics-card {
     opacity: 0.7;
     margin-top: 5px;
 }
+
+/* Chart Container */
 .chart-container {
     margin-top: 25px;
     padding: 20px;
     border-radius: 20px;
     background: rgba(102,126,234,0.05);
 }
+.chart-container h3 {
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+/* Bar Chart */
 .bar-chart {
     display: flex;
     gap: 12px;
@@ -437,6 +476,63 @@ body.dark-mode .analytics-card {
 .bar-label {
     font-size: 0.7rem;
     font-weight: 500;
+}
+
+/* Top Commands List */
+.top-commands-list {
+    margin-top: 15px;
+}
+.top-command-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    margin: 5px 0;
+    background: rgba(102,126,234,0.08);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+.top-command-item:hover {
+    background: rgba(102,126,234,0.15);
+    transform: translateX(5px);
+}
+.top-command-name {
+    font-weight: 600;
+    color: #667eea;
+}
+.top-command-count {
+    background: #667eea;
+    color: white;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Command Distribution */
+.command-distribution {
+    margin-top: 15px;
+}
+.distribution-item {
+    margin-bottom: 12px;
+}
+.distribution-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.75rem;
+}
+.distribution-bar {
+    height: 8px;
+    background: rgba(102,126,234,0.2);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.distribution-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 10px;
+    transition: width 0.5s ease;
 }
 
 /* Commands Styles */
@@ -499,7 +595,7 @@ body.dark-mode .analytics-card {
     font-weight: 600;
     font-size: 0.85rem;
 }
-.input-group input, .input-group textarea {
+.input-group input, .input-group textarea, .input-group select {
     width: 100%;
     padding: 12px 14px;
     border: 2px solid #e2e8f0;
@@ -510,17 +606,27 @@ body.dark-mode .analytics-card {
     background: inherit;
     color: inherit;
 }
-.input-group input:focus, .input-group textarea:focus {
+.input-group input:focus, .input-group textarea:focus, .input-group select:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
 }
+
+/* Checkbox */
 .checkbox-group {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 20px;
 }
+.checkbox-group input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+/* Buttons */
 .btn-connect {
     width: 100%;
     padding: 12px;
@@ -541,22 +647,24 @@ body.dark-mode .analytics-card {
     opacity: 0.5;
     cursor: not-allowed;
 }
-.btn-logout {
-    width: 100%;
-    padding: 12px;
+
+.btn-disconnect {
     background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
     color: white;
     border: none;
     border-radius: 40px;
+    padding: 12px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.25s;
 }
-.btn-logout:hover {
+.btn-disconnect:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(231,76,60,0.4);
 }
+
+/* Config Row */
 .config-row {
     display: flex;
     align-items: center;
@@ -600,7 +708,6 @@ body.dark-mode .analytics-card {
     gap: 18px;
 }
 .session-card {
-    background: rgba(255,255,255,0.06);
     border-radius: 20px;
     padding: 18px;
     transition: all 0.25s;
@@ -631,25 +738,8 @@ body.dark-mode .analytics-card {
     color: #27ae60;
     font-weight: 600;
 }
-.disconnect-session-btn {
-    margin-top: 12px;
-    width: 100%;
-    padding: 8px;
-    background: rgba(231,76,60,0.2);
-    color: #e74c3c;
-    border: 1px solid #e74c3c;
-    border-radius: 30px;
-    cursor: pointer;
-    font-size: 0.7rem;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-.disconnect-session-btn:hover {
-    background: #e74c3c;
-    color: white;
-}
 
-/* Tutorial & Messages */
+/* Tutorial */
 .tutorial-step {
     background: rgba(255,255,255,0.04);
     border-radius: 20px;
@@ -676,22 +766,57 @@ body.dark-mode .analytics-card {
     font-size: 1.2rem;
     color: white;
 }
-.warning-box, .note-box, .success-box {
-    padding: 12px;
-    border-radius: 14px;
-    margin: 12px 0;
+.step-content {
+    padding-left: 55px;
 }
-.warning-box { background: rgba(231,76,60,0.12); border-left: 4px solid #e74c3c; }
-.success-box { background: rgba(39,174,96,0.12); border-left: 4px solid #27ae60; }
+.step-content ul, .step-content ol {
+    margin-left: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.step-content li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Warning & Success Boxes */
+.warning-box {
+    background: rgba(231,76,60,0.12);
+    border-left: 4px solid #e74c3c;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+.success-box {
+    background: rgba(39,174,96,0.12);
+    border-left: 4px solid #27ae60;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* Message */
 .message {
     margin-top: 16px;
     padding: 12px;
     border-radius: 14px;
     display: none;
 }
-.message.success { background: #d4edda; color: #155724; display: block; }
-.message.error { background: #f8d7da; color: #721c24; display: block; }
-.message.info { background: #d1ecf1; color: #0c5460; display: block; }
+.message.success {
+    background: #d4edda;
+    color: #155724;
+    display: block;
+}
+.message.error {
+    background: #f8d7da;
+    color: #721c24;
+    display: block;
+}
+.message.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    display: block;
+}
 
 /* Modal */
 .modal {
@@ -710,12 +835,21 @@ body.dark-mode .analytics-card {
     background: white;
     border-radius: 32px;
     padding: 30px;
-    max-width: 480px;
+    max-width: 500px;
     width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 body.dark-mode .modal-content {
     background: #12121f;
     color: white;
+}
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+.modal-content ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
 }
 .modal-buttons {
     display: flex;
@@ -730,8 +864,16 @@ body.dark-mode .modal-content {
     font-weight: 600;
     cursor: pointer;
 }
-.btn-accept { background: #27ae60; color: white; }
-.btn-decline { background: #e74c3c; color: white; }
+.btn-accept {
+    background: #27ae60;
+    color: white;
+}
+.btn-decline {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Footer */
 .footer {
     text-align: center;
     padding: 20px;
@@ -739,7 +881,21 @@ body.dark-mode .modal-content {
     opacity: 0.7;
 }
 
-/* Responsive: Mobile view with smooth sidebar slide */
+/* Loading State */
+.loading {
+    text-align: center;
+    padding: 40px;
+    opacity: 0.6;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    opacity: 0.6;
+}
+
+/* ========== RESPONSIVE DESIGN ========== */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
@@ -759,9 +915,81 @@ body.dark-mode .modal-content {
     .dashboard-stats {
         grid-template-columns: 1fr 1fr;
     }
+    .analytics-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .commands-grid {
+        grid-template-columns: 1fr;
+    }
+    .sessions-grid {
+        grid-template-columns: 1fr;
+    }
+    .step-content {
+        padding-left: 0;
+    }
+    .step-header {
+        flex-wrap: wrap;
+    }
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    .analytics-value {
+        font-size: 1.5rem;
+    }
 }
+
 @media (max-width: 500px) {
     .dashboard-stats {
         grid-template-columns: 1fr;
     }
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    .card {
+        padding: 18px;
+    }
+    .config-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .config-label {
+        min-width: auto;
+    }
+    .copy-btn {
+        align-self: flex-end;
+    }
+    .modal-content {
+        padding: 20px;
+        width: 95%;
+    }
+}
+
+/* Scrollbar for main content */
+.main-content::-webkit-scrollbar {
+    width: 5px;
+}
+.main-content::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 10px;
+}
+.main-content::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+/* Selection Color */
+::selection {
+    background: #667eea;
+    color: white;
+}
+
+/* Focus Visible for Accessibility */
+:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Smooth Transitions for Interactive Elements */
+a, button, .menu-item, .command-item, .stat-card, .analytics-card, .session-card {
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
