@@ -20,7 +20,7 @@
     </button>
 
     <div class="main-wrapper">
-        <!-- Sidebar Menu - FIXED with smooth transition -->
+        <!-- Sidebar Menu -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <h2><i class="fas fa-robot"></i> AutoPageBot</h2>
@@ -81,7 +81,7 @@
                     <p>Messenger Automation Platform</p>
                 </div>
 
-                <!-- BANNER WITH RED BREATHING BORDER EFFECT -->
+                <!-- BANNER WITH RED BREATHING BORDER -->
                 <div class="banner">
                     <img src="https://cdnb.artstation.com/p/assets/images/images/066/149/065/original/killer-rabbit-media-chinese-alleyway-export.gif?1692171513" alt="AutoPageBot Banner">
                 </div>
@@ -113,40 +113,45 @@
                     <h2><i class="fas fa-chart-line"></i> System Status</h2>
                     <p>All systems operational. Your bots are running smoothly.</p>
                     <div style="margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
                             <span><i class="fas fa-globe"></i> Active Sessions</span>
                             <span id="statusActiveSessions" style="color: #27ae60; font-weight: bold;">0</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
                             <span><i class="fas fa-server"></i> Server Status</span>
                             <span style="color: #27ae60; font-weight: bold;">● Online</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
                             <span><i class="fas fa-clock"></i> Server Uptime</span>
                             <span id="serverUptime" style="font-weight: bold;">Loading...</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
                             <span><i class="fas fa-calendar-alt"></i> Started At</span>
                             <span id="serverStartTime" style="font-weight: bold;">Loading...</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
                             <span><i class="fas fa-code-branch"></i> Total Commands</span>
                             <span id="totalCommandsCount" style="color: #667eea; font-weight: bold;">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+                            <span><i class="fas fa-envelope"></i> Total Messages</span>
+                            <span id="dashboardTotalMessages" style="color: #667eea; font-weight: bold;">0</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Analytics Section -->
+            <!-- Analytics Section with Live Tracking -->
             <div id="analytics-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-chart-pie"></i> Analytics Dashboard</h2>
-                    <p>Real-time bot usage statistics and insights</p>
+                    <p>Real-time bot usage statistics from your connected pages</p>
+                    
                     <div class="analytics-grid">
                         <div class="analytics-card">
                             <i class="fas fa-envelope"></i>
                             <div class="analytics-value" id="totalMessages">0</div>
-                            <div class="analytics-label">Total Messages</div>
+                            <div class="analytics-label">Total Messages Received</div>
                         </div>
                         <div class="analytics-card">
                             <i class="fas fa-users"></i>
@@ -158,19 +163,35 @@
                             <div class="analytics-value" id="topCommand">-</div>
                             <div class="analytics-label">Most Used Command</div>
                         </div>
+                        <div class="analytics-card">
+                            <i class="fas fa-chart-simple"></i>
+                            <div class="analytics-value" id="totalCommandsUsed">0</div>
+                            <div class="analytics-label">Total Commands Executed</div>
+                        </div>
                     </div>
+
+                    <div class="chart-container">
+                        <h3>🏆 Top 10 Most Used Commands</h3>
+                        <div id="topCommandsList" class="top-commands-list"></div>
+                    </div>
+
                     <div class="chart-container">
                         <h3>📊 Message Activity (Last 7 Days)</h3>
                         <div class="bar-chart" id="activityChart"></div>
                     </div>
+
+                    <div class="chart-container">
+                        <h3>📈 Command Usage Distribution</h3>
+                        <div id="commandDistribution" class="command-distribution"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Connect Section -->
+            <!-- Connect Section with Disconnect by Token -->
             <div id="connect-section" class="section">
                 <div class="card">
-                    <h2><i class="fas fa-plug"></i> Access your page</h2>
-                    <p>Paste your Page Token to link your Facebook page</p>
+                    <h2><i class="fas fa-plug"></i> Connect / Disconnect Page</h2>
+                    <p>Paste your Page Token to link your Facebook page. Use the same token to disconnect.</p>
 
                     <form id="connectForm">
                         <div class="input-group">
@@ -193,29 +214,25 @@
                             <label for="agreeTerms">I agree to the <a href="#" id="privacyLink" style="color: #667eea;">Privacy Policy</a> and Terms of Service</label>
                         </div>
 
-                        <button type="submit" class="btn-connect" id="connectBtn" disabled>
-                            <i class="fas fa-link"></i> Connect Page →
-                        </button>
+                        <div style="display: flex; gap: 12px;">
+                            <button type="submit" class="btn-connect" id="connectBtn" disabled style="flex: 1;">
+                                <i class="fas fa-link"></i> Connect Page →
+                            </button>
+                            <button type="button" class="btn-disconnect" id="disconnectByTokenBtn" style="flex: 1; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 40px; font-weight: 600; cursor: pointer;">
+                                <i class="fas fa-sign-out-alt"></i> Disconnect by Token
+                            </button>
+                        </div>
                     </form>
-
-                    <div style="margin-top: 20px; border-top: 1px solid rgba(102,126,234,0.2); padding-top: 20px;">
-                        <button class="btn-logout" id="logoutBtn">
-                            <i class="fas fa-sign-out-alt"></i> Logout / Disconnect Page
-                        </button>
-                        <p style="font-size: 0.7rem; text-align: center; margin-top: 8px; opacity: 0.6;">
-                            <i class="fas fa-info-circle"></i> Select a session from Active Sessions to disconnect
-                        </p>
-                    </div>
 
                     <div id="message" class="message"></div>
                 </div>
             </div>
 
-            <!-- Active Sessions Section -->
+            <!-- Active Sessions Section (View Only - No Disconnect Button) -->
             <div id="sessions-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-globe"></i> Active Sessions</h2>
-                    <p>All connected pages and their status with uptime</p>
+                    <p>All connected pages and their status. To disconnect, use the Connect Page section with your token.</p>
                     <div id="sessionsList" class="sessions-grid">
                         <div class="loading">Loading sessions...</div>
                     </div>
