@@ -60,6 +60,10 @@ body.light-mode .command-item {
 body.light-mode .config-row {
     background: #f8fafc;
 }
+body.light-mode .analytics-card {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
 
 /* ========== DARK MODE ========== */
 body.dark-mode {
@@ -96,6 +100,9 @@ body.dark-mode .command-item {
 }
 body.dark-mode .config-row {
     background: #1a1a2a;
+}
+body.dark-mode .analytics-card {
+    background: #1a1c2e;
 }
 
 /* ========== LAYOUT & SIDEBAR (FIXED + SMOOTH) ========== */
@@ -270,18 +277,36 @@ body.dark-mode .config-row {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Banner, Cards, Stats */
+/* BANNER WITH RED BREATHING BORDER */
 .banner {
     border-radius: 20px;
     margin-bottom: 25px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    animation: breathBorder 2s ease-in-out infinite;
 }
+
+@keyframes breathBorder {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4), 0 10px 30px rgba(0,0,0,0.15);
+        border: 2px solid rgba(220, 38, 38, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 12px rgba(220, 38, 38, 0.15), 0 0 0 6px rgba(220, 38, 38, 0.25), 0 10px 30px rgba(0,0,0,0.15);
+        border: 2px solid rgba(220, 38, 38, 0.9);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4), 0 10px 30px rgba(0,0,0,0.15);
+        border: 2px solid rgba(220, 38, 38, 0.3);
+    }
+}
+
 .banner img {
     width: 100%;
     height: auto;
     display: block;
 }
+
 .header {
     text-align: center;
     margin-bottom: 25px;
@@ -301,6 +326,7 @@ body.dark-mode .config-row {
     border-radius: 20px;
     margin-left: 8px;
 }
+
 .dashboard-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -333,6 +359,7 @@ body.dark-mode .config-row {
     font-weight: 600;
     word-break: break-all;
 }
+
 .card {
     border-radius: 24px;
     padding: 25px;
@@ -346,6 +373,70 @@ body.dark-mode .config-row {
     font-size: 0.85rem;
     opacity: 0.7;
     margin-bottom: 20px;
+}
+
+/* Analytics Styles */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.analytics-card {
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.25s;
+    background: rgba(102,126,234,0.05);
+}
+.analytics-card:hover {
+    transform: translateY(-3px);
+}
+.analytics-card i {
+    font-size: 2rem;
+    color: #667eea;
+    margin-bottom: 10px;
+    display: block;
+}
+.analytics-value {
+    font-size: 2rem;
+    font-weight: 800;
+}
+.analytics-label {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 5px;
+}
+.chart-container {
+    margin-top: 25px;
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(102,126,234,0.05);
+}
+.bar-chart {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    height: 200px;
+    margin-top: 20px;
+}
+.bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.bar {
+    width: 100%;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    transition: height 0.5s ease;
+    min-height: 4px;
+}
+.bar-label {
+    font-size: 0.7rem;
+    font-weight: 500;
 }
 
 /* Commands Styles */
@@ -450,6 +541,22 @@ body.dark-mode .config-row {
     opacity: 0.5;
     cursor: not-allowed;
 }
+.btn-logout {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: none;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+.btn-logout:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(231,76,60,0.4);
+}
 .config-row {
     display: flex;
     align-items: center;
@@ -523,6 +630,23 @@ body.dark-mode .config-row {
 .uptime-value {
     color: #27ae60;
     font-weight: 600;
+}
+.disconnect-session-btn {
+    margin-top: 12px;
+    width: 100%;
+    padding: 8px;
+    background: rgba(231,76,60,0.2);
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.disconnect-session-btn:hover {
+    background: #e74c3c;
+    color: white;
 }
 
 /* Tutorial & Messages */
