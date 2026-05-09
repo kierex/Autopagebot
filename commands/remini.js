@@ -19,10 +19,10 @@ module.exports = {
     await sendMessage(senderId, { text: '🔄 𝗨𝗽𝘀𝗰𝗮𝗹𝗶𝗻𝗴 𝘁𝗵𝗲 𝗶𝗺𝗮𝗴𝗲, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁...' }, pageAccessToken);
 
     try {
-      const apiUrl = `https://api-library-kohi.onrender.com/api/upscale?url=${encodeURIComponent(imageUrl)}`;
+      const apiUrl = `https://free-goat-api.onrender.com/4k?url=${encodeURIComponent(imageUrl)}`;
       const { data } = await axios.get(apiUrl);
 
-      if (!data.status || !data.data?.url) {
+      if (!data.image) {
         return sendMessage(senderId, {
           text: '❌ Upscale failed. No result from API.'
         }, pageAccessToken);
@@ -32,7 +32,7 @@ module.exports = {
         attachment: {
           type: 'image',
           payload: {
-            url: data.data.url
+            url: data.image
           }
         }
       }, pageAccessToken);
