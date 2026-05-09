@@ -130,22 +130,22 @@
                             <span id="serverStartTime" style="font-weight: bold;">Loading...</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 10px 0;">
-                            <span><i class="fas fa-code-branch"></i> Total Commands</span>
+                            <span><i class="fas fa-code-branch"></i> Total Commands Loaded</span>
                             <span id="totalCommandsCount" style="color: #667eea; font-weight: bold;">0</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 10px 0;">
-                            <span><i class="fas fa-envelope"></i> Total Messages</span>
-                            <span id="dashboardTotalMessages" style="color: #667eea; font-weight: bold;">0</span>
+                            <span><i class="fas fa-chart-simple"></i> Commands Executed</span>
+                            <span id="dashboardTotalCommandsExecuted" style="color: #27ae60; font-weight: bold;">0</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Analytics Section with Live Tracking -->
+            <!-- Analytics Section -->
             <div id="analytics-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-chart-pie"></i> Analytics Dashboard</h2>
-                    <p>Real-time bot usage statistics from your connected pages</p>
+                    <p>Real-time bot usage statistics from actual command execution</p>
                     
                     <div class="analytics-grid">
                         <div class="analytics-card">
@@ -159,20 +159,22 @@
                             <div class="analytics-label">Unique Users</div>
                         </div>
                         <div class="analytics-card">
+                            <i class="fas fa-terminal"></i>
+                            <div class="analytics-value" id="totalCommandsExecuted">0</div>
+                            <div class="analytics-label">Commands Executed</div>
+                        </div>
+                        <div class="analytics-card">
                             <i class="fas fa-rocket"></i>
                             <div class="analytics-value" id="topCommand">-</div>
                             <div class="analytics-label">Most Used Command</div>
-                        </div>
-                        <div class="analytics-card">
-                            <i class="fas fa-chart-simple"></i>
-                            <div class="analytics-value" id="totalCommandsUsed">0</div>
-                            <div class="analytics-label">Total Commands Executed</div>
                         </div>
                     </div>
 
                     <div class="chart-container">
                         <h3>🏆 Top 10 Most Used Commands</h3>
-                        <div id="topCommandsList" class="top-commands-list"></div>
+                        <div id="topCommandsList" class="top-commands-list">
+                            <div class="loading">Loading command stats...</div>
+                        </div>
                     </div>
 
                     <div class="chart-container">
@@ -182,12 +184,14 @@
 
                     <div class="chart-container">
                         <h3>📈 Command Usage Distribution</h3>
-                        <div id="commandDistribution" class="command-distribution"></div>
+                        <div id="commandDistribution" class="command-distribution">
+                            <div class="loading">Loading distribution...</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Connect Section with Disconnect by Token -->
+            <!-- Connect Section -->
             <div id="connect-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-plug"></i> Connect / Disconnect Page</h2>
@@ -214,11 +218,11 @@
                             <label for="agreeTerms">I agree to the <a href="#" id="privacyLink" style="color: #667eea;">Privacy Policy</a> and Terms of Service</label>
                         </div>
 
-                        <div style="display: flex; gap: 12px;">
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <button type="submit" class="btn-connect" id="connectBtn" disabled style="flex: 1;">
                                 <i class="fas fa-link"></i> Connect Page →
                             </button>
-                            <button type="button" class="btn-disconnect" id="disconnectByTokenBtn" style="flex: 1; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 40px; font-weight: 600; cursor: pointer;">
+                            <button type="button" class="btn-disconnect" id="disconnectByTokenBtn" style="flex: 1;">
                                 <i class="fas fa-sign-out-alt"></i> Disconnect by Token
                             </button>
                         </div>
@@ -228,7 +232,7 @@
                 </div>
             </div>
 
-            <!-- Active Sessions Section (View Only - No Disconnect Button) -->
+            <!-- Active Sessions Section -->
             <div id="sessions-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-globe"></i> Active Sessions</h2>
@@ -243,7 +247,7 @@
             <div id="commands-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-terminal"></i> Available Commands</h2>
-                    <p>All available bot commands grouped by category</p>
+                    <p>All available bot commands grouped by category. Click any command to simulate execution for demo.</p>
                     <div id="commandsList" class="commands-container">
                         <div class="loading">Loading commands...</div>
                     </div>
@@ -329,20 +333,6 @@
             <div class="modal-buttons">
                 <button class="btn-accept" id="acceptPrivacyBtn"><i class="fas fa-check"></i> Accept</button>
                 <button class="btn-decline" id="declinePrivacyBtn"><i class="fas fa-times"></i> Decline</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Disconnect Confirmation Modal -->
-    <div id="disconnectModal" class="modal">
-        <div class="modal-content">
-            <h2><i class="fas fa-exclamation-triangle"></i> Disconnect Page</h2>
-            <p>Are you sure you want to disconnect this page?</p>
-            <p id="disconnectPageName" style="font-weight: bold; color: #e74c3c;"></p>
-            <p>This action will remove the page token and stop the bot for this page.</p>
-            <div class="modal-buttons">
-                <button class="btn-accept" id="confirmDisconnectBtn" style="background: #e74c3c;"><i class="fas fa-trash"></i> Disconnect</button>
-                <button class="btn-decline" id="cancelDisconnectBtn" style="background: #667eea;">Cancel</button>
             </div>
         </div>
     </div>
