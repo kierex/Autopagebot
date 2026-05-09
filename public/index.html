@@ -32,6 +32,10 @@
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </div>
+                <div class="menu-item" data-section="analytics">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </div>
                 <div class="menu-item" data-section="connect">
                     <i class="fas fa-plug"></i>
                     <span>Connect Page</span>
@@ -77,6 +81,7 @@
                     <p>Messenger Automation Platform</p>
                 </div>
 
+                <!-- BANNER WITH RED BREATHING BORDER EFFECT -->
                 <div class="banner">
                     <img src="https://cdnb.artstation.com/p/assets/images/images/066/149/065/original/killer-rabbit-media-chinese-alleyway-export.gif?1692171513" alt="AutoPageBot Banner">
                 </div>
@@ -124,6 +129,39 @@
                             <span><i class="fas fa-calendar-alt"></i> Started At</span>
                             <span id="serverStartTime" style="font-weight: bold;">Loading...</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <span><i class="fas fa-code-branch"></i> Total Commands</span>
+                            <span id="totalCommandsCount" style="color: #667eea; font-weight: bold;">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics-section" class="section">
+                <div class="card">
+                    <h2><i class="fas fa-chart-pie"></i> Analytics Dashboard</h2>
+                    <p>Real-time bot usage statistics and insights</p>
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <i class="fas fa-envelope"></i>
+                            <div class="analytics-value" id="totalMessages">0</div>
+                            <div class="analytics-label">Total Messages</div>
+                        </div>
+                        <div class="analytics-card">
+                            <i class="fas fa-users"></i>
+                            <div class="analytics-value" id="uniqueUsers">0</div>
+                            <div class="analytics-label">Unique Users</div>
+                        </div>
+                        <div class="analytics-card">
+                            <i class="fas fa-rocket"></i>
+                            <div class="analytics-value" id="topCommand">-</div>
+                            <div class="analytics-label">Most Used Command</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>📊 Message Activity (Last 7 Days)</h3>
+                        <div class="bar-chart" id="activityChart"></div>
                     </div>
                 </div>
             </div>
@@ -159,6 +197,15 @@
                             <i class="fas fa-link"></i> Connect Page →
                         </button>
                     </form>
+
+                    <div style="margin-top: 20px; border-top: 1px solid rgba(102,126,234,0.2); padding-top: 20px;">
+                        <button class="btn-logout" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout / Disconnect Page
+                        </button>
+                        <p style="font-size: 0.7rem; text-align: center; margin-top: 8px; opacity: 0.6;">
+                            <i class="fas fa-info-circle"></i> Select a session from Active Sessions to disconnect
+                        </p>
+                    </div>
 
                     <div id="message" class="message"></div>
                 </div>
@@ -217,7 +264,7 @@
                     <div class="tutorial-container">
                         <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">📋</div><div class="step-title">Prerequisites</div></div>
-                            <div class="step-content"><ul><li>A Facebook account</li><li>A Powered by: developer.facebook.com</li></ul></div>
+                            <div class="step-content"><ul><li>A Facebook account</li><li>developer.facebook.com access</li></ul></div>
                         </div>
                         <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">1</div><div class="step-title">Initial Facebook Setup</div></div>
@@ -238,7 +285,7 @@
                         </div>
                         <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">5</div><div class="step-title">Set Up Webhooks</div></div>
-                            <div class="step-content"><ol><li>Go to Messenger API Settings</li><li>Add Callback URL: <code id="tutorialWebhookUrl">loading...</code></li><li>Verify Token: <code>bot</code></li><li>Subscribe to messages, messaging_postbacks</li></ol></div>
+                            <div class="step-content"><ol><li>Go to Messenger API Settings</li><li>Add Callback URL: <code id="tutorialWebhookUrl">loading...</code></li><li>Verify Token: <code>autopagebot</code></li><li>Subscribe to messages, messaging_postbacks</li></ol></div>
                         </div>
                         <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">6</div><div class="step-title">Make App Live</div></div>
@@ -250,7 +297,7 @@
             </div>
 
             <div class="footer">
-                <p>© 2026 AutoPageBot</p>
+                <p>© 2026 AutoPageBot — Messenger Automation</p>
             </div>
         </div>
     </div>
@@ -265,6 +312,20 @@
             <div class="modal-buttons">
                 <button class="btn-accept" id="acceptPrivacyBtn"><i class="fas fa-check"></i> Accept</button>
                 <button class="btn-decline" id="declinePrivacyBtn"><i class="fas fa-times"></i> Decline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disconnect Confirmation Modal -->
+    <div id="disconnectModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-exclamation-triangle"></i> Disconnect Page</h2>
+            <p>Are you sure you want to disconnect this page?</p>
+            <p id="disconnectPageName" style="font-weight: bold; color: #e74c3c;"></p>
+            <p>This action will remove the page token and stop the bot for this page.</p>
+            <div class="modal-buttons">
+                <button class="btn-accept" id="confirmDisconnectBtn" style="background: #e74c3c;"><i class="fas fa-trash"></i> Disconnect</button>
+                <button class="btn-decline" id="cancelDisconnectBtn" style="background: #667eea;">Cancel</button>
             </div>
         </div>
     </div>
