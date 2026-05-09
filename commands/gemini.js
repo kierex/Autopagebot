@@ -133,7 +133,7 @@ module.exports = {
       }
 
       // Format and send response with API indicator
-      const apiIndicator = apiUsed === "primary" ? "✨" : "🔄";
+      const apiIndicator = apiUsed === "primary" ? "✨" : "✨ ";
       const message = `${apiIndicator} 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜 ${apiUsed === "secondary" ? "" : ""}\n━━━━━━━━━━━━━━━━━\n${aiResponse}\n━━━━━━━━━━━━━━━━━`;
 
       await sendConcatenatedMessage(senderId, message, pageAccessToken);
