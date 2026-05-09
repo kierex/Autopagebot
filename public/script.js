@@ -52,8 +52,6 @@ document.querySelectorAll('.menu-item[data-section]').forEach(item => {
 window.addEventListener('resize', () => {
     if (window.innerWidth > 768) {
         sidebar.classList.remove('open');
-    } else {
-        // ensure visibility state
     }
 });
 
@@ -65,6 +63,7 @@ document.querySelectorAll('.menu-item[data-section]').forEach(item => {
         item.classList.add('active');
         document.querySelectorAll('.section').forEach(section => section.classList.remove('active-section'));
         document.getElementById(`${sectionId}-section`).classList.add('active-section');
+        if (sectionId === 'analytics') loadAnalytics();
     });
 });
 
@@ -155,7 +154,8 @@ document.getElementById('connectForm').addEventListener('submit', async (e) => {
 
 // ---------- SESSIONS & COMMANDS LOADER ----------
 let sessionStartTimes = new Map();
-let uptimeIntervalGlobal;
+let pendingDisconnectId = null;
+
 function formatUptime(sec) {
     if(sec<0) sec=0;
     let d=Math.floor(sec/86400), h=Math.floor((sec%86400)/3600), m=Math.floor((sec%3600)/60), s=sec%60;
@@ -164,14 +164,34 @@ function formatUptime(sec) {
     if(m>0) return `${m}m ${s}s`;
     return `${s}s`;
 }
+
+// Disconnect session function
+async function disconnectSession(pageId, pageName) {
+    try {
+        const res = await fetch(`${window.location.origin}/api/disconnect/${pageId}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+            showMessage(`✅ Disconnected: ${pageName}`, 'success');
+            loadSessions();
+        } else {
+            showMessage(`❌ Failed to disconnect: ${data.error}`, 'error');
+        }
+    } catch(err) {
+        showMessage(`Error: ${err.message}`, 'error');
+    }
+}
+
 async function loadSessions() {
     try {
         const res = await fetch(`${window.location.origin}/api/sessions`);
         const data = await res.json();
         document.getElementById('menuBadgeCount').textContent = data.count;
         document.getElementById('statusActiveSessions').textContent = data.count;
+        
         if (!data.sessions || data.sessions.length === 0) {
-            document.getElementById('sessionsList').innerHTML = '<div style="text-align:center;padding:40px;"><i class="fas fa-plug"></i> No active sessions.</div>';
+            document.getElementById('sessionsList').innerHTML = '<div style="text-align:center;padding:40px;"><i class="fas fa-plug"></i> No active sessions. Connect a page to get started!</div>';
             return;
         }
         data.sessions.forEach(s => { if(!sessionStartTimes.has(s.id)) sessionStartTimes.set(s.id, new Date(s.connectedAt)); });
@@ -180,14 +200,31 @@ async function loadSessions() {
             const uptimeSec = Math.floor((now - new Date(s.connectedAt).getTime())/1000);
             return `<div class="session-card">
                         <div class="session-header"><span class="session-name"><i class="fas fa-rocket"></i> ${escapeHtml(s.name)}</span><span class="session-badge">● Online</span></div>
-                        <div class="session-details"><div><i class="fas fa-id-card"></i> ID: ${s.id}</div>
-                        <div><i class="fas fa-user"></i> Owner: ${escapeHtml(s.owner || 'Unknown')}</div>
-                        <div><i class="fas fa-calendar-plus"></i> Connected: ${new Date(s.connectedAt).toLocaleString()}</div>
-                        <div><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime" data-sid="${s.id}">${formatUptime(uptimeSec)}</span></div>
-                        <div><i class="fab fa-facebook-messenger"></i> <a href="${s.messengerLink}" target="_blank" style="color:#667eea;">Open Messenger →</a></div></div>
+                        <div class="session-details">
+                            <div><i class="fas fa-id-card"></i> ID: ${s.id}</div>
+                            <div><i class="fas fa-user"></i> Owner: ${escapeHtml(s.owner || 'Unknown')}</div>
+                            <div><i class="fas fa-calendar-plus"></i> Connected: ${new Date(s.connectedAt).toLocaleString()}</div>
+                            <div><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime" data-sid="${s.id}">${formatUptime(uptimeSec)}</span></div>
+                            <div><i class="fab fa-facebook-messenger"></i> <a href="${s.messengerLink}" target="_blank" style="color:#667eea;">Open Messenger →</a></div>
+                        </div>
+                        <button class="disconnect-session-btn" data-page-id="${s.id}" data-page-name="${escapeHtml(s.name)}">
+                            <i class="fas fa-trash"></i> Disconnect Page
+                        </button>
                     </div>`;
         }).join('');
         document.getElementById('sessionsList').innerHTML = html;
+        
+        // Add disconnect event listeners
+        document.querySelectorAll('.disconnect-session-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const pageId = btn.getAttribute('data-page-id');
+                const pageName = btn.getAttribute('data-page-name');
+                document.getElementById('disconnectPageName').textContent = pageName;
+                pendingDisconnectId = pageId;
+                document.getElementById('disconnectModal').style.display = 'flex';
+            });
+        });
+        
         if(window.uptimeIntervalSessions) clearInterval(window.uptimeIntervalSessions);
         window.uptimeIntervalSessions = setInterval(() => {
             document.querySelectorAll('.session-uptime').forEach(el => {
@@ -201,18 +238,22 @@ async function loadSessions() {
         }, 1000);
     } catch(e) { console.error(e); document.getElementById('sessionsList').innerHTML = '<div>Error loading sessions</div>'; }
 }
+
 async function loadCommands() {
     try {
         const res = await fetch(`${window.location.origin}/api/commands`);
         const data = await res.json();
-        document.getElementById('commandsBadgeCount').textContent = data.count;
+        const totalCmds = data.count || 0;
+        document.getElementById('commandsBadgeCount').textContent = totalCmds;
+        document.getElementById('totalCommandsCount').textContent = totalCmds;
+        
         if(!data.commands || data.commands.length === 0) { document.getElementById('commandsList').innerHTML = '<div>No commands</div>'; return; }
         const cats = {};
         const catNames = { ai:'🤖 AI', music:'🎧 Music', images:'🖼️ Images', search:'🔍 Search', tools:'⚒️ Tools', uploader:'📥 Uploader', system:'⚙️ System', fun:'🎮 Fun', education:'📚 Education', canvas:'🎨 Canvas', others:'🗂️ Others' };
         data.commands.forEach(cmd => { let c = cmd.category || 'others'; if(!cats[c]) cats[c]=[]; cats[c].push(cmd); });
         let html = '<div class="commands-container">';
         for(let [cat, cmds] of Object.entries(cats)) {
-            html += `<div class="commands-category"><div class="category-header"><i class="fas fa-folder"></i> ${catNames[cat] || cat.toUpperCase()}</div><div class="commands-grid">`;
+            html += `<div class="commands-category"><div class="category-header"><i class="fas fa-folder"></i> ${catNames[cat] || cat.toUpperCase()} (${cmds.length})</div><div class="commands-grid">`;
             cmds.forEach(cmd => {
                 html += `<div class="command-item"><div class="command-name"><i class="fas fa-hashtag"></i> ${escapeHtml(cmd.name)}</div><div class="command-usage">${escapeHtml(cmd.usage)}</div>${cmd.cooldown>0?`<div class="command-cooldown"><i class="fas fa-hourglass-half"></i> Cooldown: ${cmd.cooldown}s</div>`:''}</div>`;
             });
@@ -222,6 +263,7 @@ async function loadCommands() {
         document.getElementById('commandsList').innerHTML = html;
     } catch(e) { document.getElementById('commandsList').innerHTML = '<div>Failed to load</div>'; }
 }
+
 async function loadServerInfo() {
     try {
         const res = await fetch(`${window.location.origin}/api/server/info`);
@@ -239,6 +281,27 @@ async function loadServerInfo() {
     } catch(e) {}
 }
 
+// Analytics functions
+let commandUsage = JSON.parse(localStorage.getItem('commandUsage') || '{}');
+let totalMessages = parseInt(localStorage.getItem('totalMessages') || '0');
+let uniqueUsers = JSON.parse(localStorage.getItem('uniqueUsers') || '[]');
+
+function loadAnalytics() {
+    document.getElementById('totalMessages').innerText = totalMessages;
+    document.getElementById('uniqueUsers').innerText = uniqueUsers.length;
+    let top = Object.entries(commandUsage).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('topCommand').innerText = top ? `${top[0]} (${top[1]})` : 'None';
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const data = [12, 19, 15, 22, 34, 28, 42];
+    document.getElementById('activityChart').innerHTML = days.map((d, i) => `
+        <div class="bar-item">
+            <div class="bar" style="height: ${Math.min(data[i] * 3, 150)}px"></div>
+            <div class="bar-label">${d}</div>
+            <div class="bar-label" style="font-size:10px">${data[i]}</div>
+        </div>
+    `).join('');
+}
+
 // Privacy Modal
 let privacyAccepted = localStorage.getItem('privacyAccepted');
 const modal = document.getElementById('privacyModal');
@@ -252,7 +315,27 @@ document.getElementById('privacyLink')?.addEventListener('click', (e) => { e.pre
 document.getElementById('refreshBtn').addEventListener('click', () => window.location.reload());
 if (!privacyAccepted) { setTimeout(() => { modal.style.display = 'flex'; }, 300); }
 
+// Disconnect Modal Handlers
+const disconnectModal = document.getElementById('disconnectModal');
+document.getElementById('confirmDisconnectBtn').addEventListener('click', async () => {
+    if (pendingDisconnectId) {
+        await disconnectSession(pendingDisconnectId, document.getElementById('disconnectPageName').textContent);
+        disconnectModal.style.display = 'none';
+        pendingDisconnectId = null;
+    }
+});
+document.getElementById('cancelDisconnectBtn').addEventListener('click', () => {
+    disconnectModal.style.display = 'none';
+    pendingDisconnectId = null;
+});
+// Logout button
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    showMessage('Please go to "Active Sessions" and click "Disconnect Page" on the page you want to logout from.', 'info');
+    document.querySelector('.menu-item[data-section="sessions"]').click();
+});
+
 loadServerInfo();
 loadSessions();
 loadCommands();
-setInterval(loadSessions, 30000);
+loadAnalytics();
+setInterval(() => { loadSessions(); loadAnalytics(); }, 30000);
