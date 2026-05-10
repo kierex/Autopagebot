@@ -203,7 +203,7 @@ async function loadCommands() {
         document.getElementById('totalCommandsCount').textContent = data.count;
         if(!data.commands || data.commands.length === 0) { document.getElementById('commandsList').innerHTML = '<div class="loading">No commands</div>'; return; }
         const cats = {};
-        const catNames = { system:'⚙️ System', fun:'🎮 Fun', ai:'🤖 AI', tools:'⚒️ Tools', others:'🗂️ Others' };
+        const catNames = { system:' System', fun:' Fun', ai:' AI', tools:' Tools', others:' Others' };
         data.commands.forEach(cmd => { let c = cmd.category || 'others'; if(!cats[c]) cats[c]=[]; cats[c].push(cmd); });
         let html = '<div class="commands-container">';
         for(let [cat, cmds] of Object.entries(cats)) {
