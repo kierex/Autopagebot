@@ -15,79 +15,66 @@ module.exports = {
 
     async execute(senderId, args, pageAccessToken) {
         if (!args.length) {
-            return sendMessage(senderId, { text: '❌ 𝗣𝗿𝗼𝘃𝗶𝗱𝗲 𝗾𝘂𝗲𝗿𝘆.\nUsage: youtube <video name>' }, pageAccessToken);
+            return sendMessage(senderId, { text: '❌ Please provide a search query.\nUsage: youtube <song/video name>' }, pageAccessToken);
         }
 
-        await searchYouTubeVideo(senderId, args.join(' '), pageAccessToken);
-    }
-};
+        const query = args.join(' ');
 
-const searchYouTubeVideo = async (senderId, query, pageAccessToken) => {
-    try {
-        const searchRes = await axios.get(SEARCH_URL, {
-            params: {
-                search: query,
-                stream: false,
-                limit: 1,
-                api_key: API_KEY
-            }
-        });
-
-        const video = searchRes.data?.[0];
-        if (!video) {
-            return sendMessage(senderId, { text: '⚠️ No video found.' }, pageAccessToken);
-        }
-
-        const { title, url, thumbnail, author, duration, views, ago } = video;
-
-        const downloadRes = await axios.get(DOWNLOAD_URL, {
-            params: {
-                url: url,
-                stream: false,
-                api_key: API_KEY
-            }
-        });
-
-        if (!downloadRes.data?.success || !downloadRes.data?.url) {
-            return sendMessage(senderId, { text: '⚠️ No valid video format found.' }, pageAccessToken);
-        }
-
-        const videoUrl = downloadRes.data.url;
-
-        // Send template with video info
-        await sendMessage(senderId, {
-            attachment: {
-                type: 'template',
-                payload: {
-                    template_type: 'generic',
-                    elements: [{
-                        title: `🎬 ${title}`,
-                        image_url: thumbnail,
-                        subtitle: `👤 ${author.name}\n⏱️ ${duration.timestamp}\n👁️ ${formatViews(views)}\n📅 ${ago}`,
-                        default_action: {
-                            type: 'web_url',
-                            url: url,
-                            webview_height_ratio: 'tall'
-                        }
-                    }]
+        try {
+            // Search for video (limit 1)
+            const searchRes = await axios.get(SEARCH_URL, {
+                params: {
+                    search: query,
+                    stream: false,
+                    limit: 1,
+                    api_key: API_KEY
                 }
-            }
-        }, pageAccessToken);
+            });
 
-        // Send the actual video
-        await sendMessage(senderId, {
-            attachment: {
-                type: 'video',
-                payload: {
-                    url: videoUrl,
-                    is_reusable: true
+            const video = searchRes.data?.[0];
+            if (!video) {
+                return sendMessage(senderId, { text: `❌ No results found for "${query}".` }, pageAccessToken);
+            }
+
+            // Get download link
+            const downloadRes = await axios.get(DOWNLOAD_URL, {
+                params: {
+                    url: video.url,
+                    stream: false,
+                    api_key: API_KEY
                 }
-            }
-        }, pageAccessToken);
+            });
 
-    } catch (error) {
-        console.error('Error fetching YouTube video:', error);
-        sendMessage(senderId, { text: '❌ Error: Unexpected error occurred.' }, pageAccessToken);
+            if (!downloadRes.data?.success || !downloadRes.data?.url) {
+                return sendMessage(senderId, { text: '❌ Failed to get video download link.' }, pageAccessToken);
+            }
+
+            // Send video info as text
+            const infoMessage = `🎧 𝗬𝗼𝘂𝗧𝘂𝗯𝗲 𝗩𝗶𝗱𝗲𝗼 𝗥𝗲𝘀𝘂𝗹𝘁 𝗳𝗼𝗿: "${query}"\n\n` +
+                `🎬 ${video.title}\n` +
+                `👤 ${video.author.name}\n` +
+                `⏱️ ${video.duration.timestamp}\n` +
+                `👁️ ${formatViews(video.views)}\n` +
+                `📅 ${video.ago}\n` +
+                `🔗 ${video.url}`;
+
+            await sendMessage(senderId, { text: infoMessage }, pageAccessToken);
+
+            // Send the video
+            await sendMessage(senderId, {
+                attachment: {
+                    type: 'video',
+                    payload: {
+                        url: downloadRes.data.url,
+                        is_reusable: true
+                    }
+                }
+            }, pageAccessToken);
+
+        } catch (error) {
+            console.error('YouTube Error:', error.response?.data || error.message);
+            await sendMessage(senderId, { text: '❌ Failed to fetch video. Try again!' }, pageAccessToken);
+        }
     }
 };
 
