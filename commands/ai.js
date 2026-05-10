@@ -2,11 +2,9 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 const memory = require('../utils/memoryManager');
 
-// Primary API - Norch (Gemini 2.5 Flash Lite)
-const NORCH_API_URL = 'https://norch-project.gleeze.com/api/gemini/2.5/flash-lite';
-
-// Secondary backup API - Sakibin
-const SAKIBIN_API_URL = 'https://sakibin.site/api/ai/chat';
+// GPT-4o API configuration
+const GPT4O_API_URL = 'https://haji-mix-api.gleeze.com/api/openai';
+const API_KEY = '79d08d76a3deae3fae1c7637141db818ec02faf1e3597e302c4ed9e1d5211d89';
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -45,63 +43,37 @@ function extractImageUrl(message) {
   return match ? match[0] : null;
 }
 
-// Function to call primary Norch API (Gemini 2.5 Flash Lite)
-async function callNorchAPI(prompt, imageUrl = null) {
+// Function to call GPT-4o API
+async function callGPT4oAPI(prompt, imageUrl = null, senderId = null) {
   try {
     const params = {
-      prompt: prompt
+      ask: prompt,
+      model: 'gpt-4o',
+      uid: senderId || 'defaultUser',
+      roleplay: 'Smart Assistant',
+      max_tokens: '',
+      stream: false,
+      img_url: imageUrl || '',
+      api_key: API_KEY
     };
-    
-    if (imageUrl) {
-      params.imageurl = imageUrl;
-    }
-    
-    const response = await axios.get(NORCH_API_URL, {
-      params: params,
-      timeout: 45000
-    });
-    
-    if (response.data && response.data.response) {
-      console.log(`✅ Norch API (${response.data.model}) successful`);
-      return {
-        response: response.data.response,
-        apiType: 'primary',
-        model: response.data.model
-      };
-    } else {
-      throw new Error('Invalid response from Norch API');
-    }
-  } catch (error) {
-    console.error('Norch API failed:', error.message);
-    throw error;
-  }
-}
 
-// Function to call secondary Sakibin API
-async function callSakibinAPI(prompt, imageUrl = null) {
-  try {
-    // Sakibin API doesn't support images, so if image is provided, we'll mention it in the prompt
-    let finalPrompt = prompt;
-    if (imageUrl) {
-      finalPrompt = `[Image URL: ${imageUrl}] ${prompt}`;
-    }
-    
-    const response = await axios.get(SAKIBIN_API_URL, {
-      params: { message: finalPrompt },
-      timeout: 30000
+    const response = await axios.get(GPT4O_API_URL, {
+      params: params,
+      timeout: 60000
     });
-    
-    if (response.data && response.data.reply) {
-      console.log(`✅ Sakibin API successful`);
+
+    if (response.data && response.data.answer) {
+      console.log(`✅ GPT-4o API successful`);
       return {
-        response: response.data.reply,
-        apiType: 'secondary'
+        response: response.data.answer,
+        modelUsed: response.data.model_used,
+        success: true
       };
     } else {
-      throw new Error('Invalid response from Sakibin API');
+      throw new Error('Invalid response from GPT-4o API');
     }
   } catch (error) {
-    console.error('Sakibin API failed:', error.message);
+    console.error('GPT-4o API failed:', error.message);
     throw error;
   }
 }
@@ -127,7 +99,7 @@ module.exports = {
         if (!args.length) {
             const stats = memory.getStats(senderId);
             return sendMessage(senderId, { 
-                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜 (Gemini 2.5 Flash Lite)
+                text: `🤖 𝗖𝗼𝗻𝘃𝗲𝗿𝘀𝗮𝘁𝗶𝗼𝗻𝗮𝗹 𝗔𝗜 (GPT-4o)
 
 📝 Usage: ai [your question]
 
@@ -143,7 +115,7 @@ module.exports = {
 
 📊 Session: ${stats.messageCount} messages
 
-💡 The AI remembers your conversation and can analyze images!`
+💡 Powered by GPT-4o - Supports image analysis!`
             }, pageAccessToken);
         }
 
@@ -189,42 +161,31 @@ module.exports = {
         // Build context from conversation history
         const context = memory.getContext(senderId, 10);
 
-        // Prepare conversation prompt with context (for backup API)
+        // Prepare conversation prompt with context
         let fullPrompt = cleanMessage || "Describe this image";
         if (context) {
             fullPrompt = `Previous conversation:\n${context}\n\nUser: ${fullPrompt}\n\nAssistant:`;
         }
 
         let aiResponse = null;
-        let apiUsed = null;
-        let modelInfo = null;
+        let modelUsed = null;
 
         try {
-            // Try primary Norch API first (Gemini 2.5 Flash Lite)
-            const primaryResult = await callNorchAPI(cleanMessage || "Describe this image", imageUrl);
-            aiResponse = primaryResult.response;
-            apiUsed = primaryResult.apiType;
-            modelInfo = primaryResult.model;
+            // Call GPT-4o API
+            const result = await callGPT4oAPI(fullPrompt, imageUrl, senderId);
+            aiResponse = result.response;
+            modelUsed = result.modelUsed;
         } catch (primaryError) {
-            console.error('Norch API failed, trying Sakibin backup:', primaryError.message);
-            
-            // Try secondary Sakibin API as fallback
-            try {
-                const secondaryResult = await callSakibinAPI(fullPrompt, imageUrl);
-                aiResponse = secondaryResult.response;
-                apiUsed = 'secondary';
-            } catch (secondaryError) {
-                console.error('Sakibin API also failed:', secondaryError.message);
-                await sendMessage(senderId, {
-                    text: header + '❌ All APIs are currently unavailable. Please try again later.\n\n💡 Both primary and backup services are down.' + footer
-                }, pageAccessToken);
-                return;
-            }
+            console.error('GPT-4o API failed:', primaryError.message);
+            await sendMessage(senderId, {
+                text: header + '❌ GPT-4o API is currently unavailable. Please try again later.\n\n💡 Service might be temporarily down.' + footer
+            }, pageAccessToken);
+            return;
         }
 
         if (!aiResponse) {
             await sendMessage(senderId, {
-                text: header + '❌ Failed to get response from AI. Please try again.' + footer
+                text: header + '❌ Failed to get response from GPT-4o. Please try again.' + footer
             }, pageAccessToken);
             return;
         }
@@ -236,16 +197,8 @@ module.exports = {
         aiResponse = aiResponse.trim();
         aiResponse = makeBold(aiResponse);
 
-        // Add API indicator to header with model info for primary
-        let apiIndicator = apiUsed === 'primary' ? '✨' : '🔄';
-        let modelText = '';
-        if (apiUsed === 'primary' && modelInfo) {
-            modelText = ` (${modelInfo})`;
-        } else if (apiUsed === 'secondary') {
-            modelText = ' (Backup)';
-        }
-        
-        const modifiedHeader = `${apiIndicator} | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁${modelText}\n・────────────・\n`;
+        // Add API indicator with model info
+        const modifiedHeader = `✨ | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (GPT-4o)\n・────────────・\n`;
 
         const chunks = splitMessage(aiResponse);
 
