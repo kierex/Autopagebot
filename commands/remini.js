@@ -18,30 +18,47 @@ module.exports = {
 
     await sendMessage(senderId, { text: '🔄 𝗨𝗽𝘀𝗰𝗮𝗹𝗶𝗻𝗴 𝘁𝗵𝗲 𝗶𝗺𝗮𝗴𝗲, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁...' }, pageAccessToken);
 
-    try {
-      const apiUrl = `https://free-goat-api.onrender.com/4k?url=${encodeURIComponent(imageUrl)}`;
-      const { data } = await axios.get(apiUrl);
-
-      if (!data.image) {
-        return sendMessage(senderId, {
-          text: '❌ Upscale failed. No result from API.'
-        }, pageAccessToken);
+    // Multiple API endpoints with fallback
+    const apis = [
+      {
+        url: `https://free-goat-api.onrender.com/4k?url=${encodeURIComponent(imageUrl)}`,
+        responseKey: 'image'
+      },
+      {
+        url: `https://betadash-api-swordslush-production.up.railway.app/upscale?imageUrl=${encodeURIComponent(imageUrl)}`,
+        responseKey: 'imageUrl'
       }
+    ];
 
-      await sendMessage(senderId, {
-        attachment: {
-          type: 'image',
-          payload: {
-            url: data.image
-          }
+    let lastError = null;
+
+    for (let i = 0; i < apis.length; i++) {
+      try {
+        const api = apis[i];
+        const { data } = await axios.get(api.url, { timeout: 30000 }); // 30 second timeout
+        
+        const enhancedImage = data[api.responseKey];
+        
+        if (enhancedImage && enhancedImage.startsWith('http')) {
+          await sendMessage(senderId, {
+            attachment: {
+              type: 'image',
+              payload: { url: enhancedImage }
+            }
+          }, pageAccessToken);
+          return; // Success - exit function
         }
-      }, pageAccessToken);
-
-    } catch (error) {
-      console.error('Remini Error:', error?.response?.data || error.message);
-      await sendMessage(senderId, {
-        text: '❌ An error occurred while enhancing the image. Please try again later.'
-      }, pageAccessToken);
+      } catch (error) {
+        lastError = error;
+        console.error(`API ${i + 1} failed:`, error?.response?.data || error.message);
+        continue; // Try next API
+      }
     }
+
+    // All APIs failed
+    console.error('All Remini APIs failed:', lastError);
+    await sendMessage(senderId, {
+      text: '❌ All enhancement services are currently unavailable. Please try again later.'
+    }, pageAccessToken);
   }
 };
