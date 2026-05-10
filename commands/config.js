@@ -2,9 +2,9 @@ const { sendMessage } = require('../handles/sendMessage');
 const tokenManager = require('../handles/tokenManager');
 
 module.exports = {
-    name: ['addbot', 'addpage', 'connectpage', 'newbot', 'botconfig'],
+    name: ['config', 'addbot', 'addpage', 'connectpage', 'newbot', 'botconfig'],
     description: 'Add/Connect a Facebook page bot using Page Access Token. Also shows webhook config info.',
-    usage: 'addbot <page_token> [page_name] [owner_name] | addbot disconnect <token> | addbot config',
+    usage: 'addbot <page_token> [page_name] [owner_name] | addbot disconnect <token> | config',
     version: '1.0.0',
     author: 'AutoPageBot',
     category: 'system',
@@ -27,7 +27,14 @@ module.exports = {
                       `🔌 *To disconnect a bot:*\n` +
                       `addbot disconnect <PAGE_TOKEN>\n\n` +
                       `⚙️ *To see webhook config:*\n` +
-                      `addbot config\n\n` +
+                      `config\n\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `🔧 *Facebook Webhook Setup:*\n\n` +
+                      `📡 *Webhook URL:*\n` +
+                      `https://automated-fbpagebot.onrender.com/webhook\n\n` +
+                      `🔐 *Verify Token:*\n` +
+                      `autopagebot\n\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
                       `*Note:* Page Token is required. Page name and owner name are optional.`
             }, pageAccessToken);
             return;
@@ -47,31 +54,12 @@ module.exports = {
 // Show webhook configuration information
 async function showWebhookConfig(senderId, pageAccessToken) {
     try {
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-        const host = process.env.HOST || require('os').hostname() || 'localhost';
-        const port = process.env.PORT || 3000;
-        
-        // Get public IP or domain
-        let publicUrl = process.env.PUBLIC_URL || '';
-        if (!publicUrl) {
-            try {
-                const ipRes = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipRes.json();
-                publicUrl = `${protocol}://${ipData.ip}:${port}`;
-            } catch (e) {
-                publicUrl = `${protocol}://${host}:${port}`;
-            }
-        }
-        
-        const webhookUrl = `${publicUrl}/webhook`;
-        const verifyToken = 'autopagebot';
-        
         const configMessage = `🔧 *Facebook Webhook Configuration*\n\n` +
                               `━━━━━━━━━━━━━━━━━━━━\n\n` +
                               `📡 *Webhook URL:*\n` +
-                              `${webhookUrl}\n\n` +
+                              `https://automated-fbpagebot.onrender.com/webhook\n\n` +
                               `🔐 *Verify Token:*\n` +
-                              `${verifyToken}\n\n` +
+                              `autopagebot\n\n` +
                               `📋 *API Version:*\n` +
                               `v23.0\n\n` +
                               `━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -80,7 +68,7 @@ async function showWebhookConfig(senderId, pageAccessToken) {
                               `2️⃣ Select your app → Messenger → Settings\n` +
                               `3️⃣ Click "Add Callback URL"\n` +
                               `4️⃣ Paste the Webhook URL above\n` +
-                              `5️⃣ Enter Verify Token: ${verifyToken}\n` +
+                              `5️⃣ Enter Verify Token: autopagebot\n` +
                               `6️⃣ Verify and save\n` +
                               `7️⃣ Subscribe to events: messages, messaging_postbacks\n\n` +
                               `⚠️ *Important:* Make sure your server is publicly accessible!\n` +
@@ -164,23 +152,6 @@ async function handleConnect(senderId, args, pageAccessToken) {
             return;
         }
         
-        // Get webhook URL for configuration info
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-        const host = process.env.HOST || 'localhost';
-        const port = process.env.PORT || 3000;
-        let publicUrl = process.env.PUBLIC_URL || `${protocol}://${host}:${port}`;
-        
-        try {
-            const ipRes = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipRes.json();
-            publicUrl = `${protocol}://${ipData.ip}:${port}`;
-        } catch (e) {
-            // Use default
-        }
-        
-        const webhookUrl = `${publicUrl}/webhook`;
-        const verifyToken = 'autopagebot';
-        
         // Add the token
         await tokenManager.addToken(pageId, {
             token: pageToken,
@@ -195,7 +166,7 @@ async function handleConnect(senderId, args, pageAccessToken) {
         
         // Setup webhook for the page
         try {
-            await setupPageWebhook(pageId, pageToken, webhookUrl, verifyToken);
+            await setupPageWebhook(pageId, pageToken);
         } catch (webhookError) {
             console.error('Webhook setup error:', webhookError);
             // Continue even if webhook setup fails - can be configured manually
@@ -211,14 +182,16 @@ async function handleConnect(senderId, args, pageAccessToken) {
                               `📅 *Connected:* ${new Date().toLocaleString()}\n` +
                               `━━━━━━━━━━━━━━━━━━━━\n\n` +
                               `🔧 *Facebook Webhook Setup:*\n\n` +
-                              `📡 *Webhook URL:*\n${webhookUrl}\n\n` +
-                              `🔐 *Verify Token:*\n${verifyToken}\n\n` +
+                              `📡 *Webhook URL:*\n` +
+                              `https://automated-fbpagebot.onrender.com/webhook\n\n` +
+                              `🔐 *Verify Token:*\n` +
+                              `autopagebot\n\n` +
                               `━━━━━━━━━━━━━━━━━━━━\n\n` +
                               `💡 *Messenger Link:*\nm.me/${username}\n\n` +
                               `🔌 *To disconnect this page:*\n` +
                               `addbot disconnect ${pageToken.substring(0, 15)}...\n\n` +
                               `⚙️ *To see webhook config again:*\n` +
-                              `addbot config`;
+                              `config`;
         
         await sendMessage(senderId, { text: successMessage }, pageAccessToken);
         
@@ -298,8 +271,11 @@ async function handleDisconnect(senderId, args, pageAccessToken) {
 }
 
 // Setup webhook for a page
-async function setupPageWebhook(pageId, pageToken, webhookUrl, verifyToken) {
+async function setupPageWebhook(pageId, pageToken) {
     try {
+        const webhookUrl = 'https://automated-fbpagebot.onrender.com/webhook';
+        const verifyToken = 'autopagebot';
+        
         // Subscribe app to page
         const subscribeRes = await fetch(`https://graph.facebook.com/v23.0/${pageId}/subscribed_apps?access_token=${pageToken}`, {
             method: 'POST',
