@@ -20,32 +20,75 @@ module.exports = {
       text: "⌛ 𝗥𝗲𝗺𝗼𝘃𝗶𝗻𝗴 𝗯𝗮𝗰𝗸𝗴𝗿𝗼𝘂𝗻𝗱, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..."
     }, pageAccessToken);
 
-    try {
-      // Updated API endpoint
-      const apiUrl = `https://api-library-kohi.onrender.com/api/removebg?url=${encodeURIComponent(imageUrl)}`;
-      const response = await axios.get(apiUrl);
-
-      // Check the new response structure
-      if (response.data?.status && response.data?.data?.url) {
-        await sendMessage(senderId, {
-          attachment: {
-            type: "image",
-            payload: {
-              url: response.data.data.url
-            }
-          }
-        }, pageAccessToken);
-      } else {
-        await sendMessage(senderId, {
-          text: `❌ Failed to remove background. Reason: ${response.data?.message || 'Unknown error'}`
-        }, pageAccessToken);
+    // Multiple API endpoints with fallback support
+    const apis = [
+      {
+        name: 'Free Goat API',
+        url: `https://free-goat-api.onrender.com/rbg?url=${encodeURIComponent(imageUrl)}`,
+        extractImage: (data) => data?.image,
+        validate: (url) => url && url.startsWith('http')
+      },
+      {
+        name: 'Kohi API',
+        url: `https://api-library-kohi.onrender.com/api/removebg?url=${encodeURIComponent(imageUrl)}`,
+        extractImage: (data) => data?.data?.url,
+        validate: (url) => url && data?.status === true
+      },
+      {
+        name: 'BetaDash API',
+        url: `https://betadash-api-swordslush-production.up.railway.app/removebg?imageUrl=${encodeURIComponent(imageUrl)}`,
+        extractImage: (data) => data?.imageUrl || data?.image,
+        validate: (url) => url && url.startsWith('http')
       }
+    ];
 
-    } catch (err) {
-      console.error("❌ Error removing background:", err);
-      await sendMessage(senderId, {
-        text: `❌ An error occurred while removing the background. Please try again later.`
-      }, pageAccessToken);
+    let lastError = null;
+
+    for (let i = 0; i < apis.length; i++) {
+      try {
+        const api = apis[i];
+        console.log(`Trying ${api.name}...`);
+        
+        const response = await axios.get(api.url, { timeout: 25000 }); // 25 second timeout
+        
+        const imageUrl_result = api.extractImage(response.data);
+        
+        if (imageUrl_result && api.validate(imageUrl_result)) {
+          await sendMessage(senderId, {
+            attachment: {
+              type: "image",
+              payload: { url: imageUrl_result }
+            }
+          }, pageAccessToken);
+          return; // Success - exit function
+        } else {
+          console.log(`${api.name} returned invalid response:`, response.data);
+        }
+        
+      } catch (error) {
+        lastError = error;
+        console.error(`${api.name} failed:`, error?.response?.data || error.message);
+        
+        // Special handling for BetaDash 500 errors
+        if (error?.response?.status === 500) {
+          console.log(`BetaDash API returned 500 - server error, skipping...`);
+        }
+        continue; // Try next API
+      }
     }
+
+    // All APIs failed
+    console.error('All RemoveBG APIs failed:', lastError);
+    
+    let errorMessage = '❌ All background removal services are currently unavailable.\n';
+    errorMessage += 'Possible reasons:\n';
+    errorMessage += '• Server maintenance or downtime\n';
+    errorMessage += '• Rate limiting exceeded\n';
+    errorMessage += '• Invalid image URL format\n\n';
+    errorMessage += '💡 Tip: Try with a different image or try again later.';
+    
+    await sendMessage(senderId, {
+      text: errorMessage
+    }, pageAccessToken);
   }
 };
