@@ -270,7 +270,7 @@ module.exports = {
         aiResponse = makeBold(aiResponse);
 
         // Add API indicator with model and key info
-        const modifiedHeader = `✨ | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (${keyUsed} Key)\n・────────────・\n`;
+        const modifiedHeader = `✨ | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n・────────────・\n`;
 
         const chunks = splitMessage(aiResponse);
 
