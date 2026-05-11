@@ -4,7 +4,12 @@ const memory = require('../utils/memoryManager');
 
 // GPT-4o API configuration
 const GPT4O_API_URL = 'https://haji-mix-api.gleeze.com/api/openai';
-const API_KEY = '79d08d76a3deae3fae1c7637141db818ec02faf1e3597e302c4ed9e1d5211d89';
+const PRIMARY_API_KEY = '79d08d76a3deae3fae1c7637141db818ec02faf1e3597e302c4ed9e1d5211d89';
+const SECONDARY_API_KEY = '66ec8aa6ce70b55c877c4489fa545c67fee8633a42442343771bd2ade432ecbd';
+
+// Track which API key is currently active
+let activeApiKey = PRIMARY_API_KEY;
+let primaryFailed = false;
 
 function makeBold(text) {
   return text.replace(/\*\*(.+?)\*\*/g, (match, word) => {
@@ -43,8 +48,18 @@ function extractImageUrl(message) {
   return match ? match[0] : null;
 }
 
-// Function to call GPT-4o API
+// Function to call GPT-4o API with automatic key fallback
 async function callGPT4oAPI(prompt, imageUrl = null, senderId = null) {
+  // Try with current active key
+  let currentKey = activeApiKey;
+  let isSecondaryAttempt = false;
+  
+  // If primary failed before, try secondary first
+  if (primaryFailed) {
+    currentKey = SECONDARY_API_KEY;
+    isSecondaryAttempt = true;
+  }
+  
   try {
     const params = {
       ask: prompt,
@@ -54,7 +69,7 @@ async function callGPT4oAPI(prompt, imageUrl = null, senderId = null) {
       max_tokens: '',
       stream: false,
       img_url: imageUrl || '',
-      api_key: API_KEY
+      api_key: currentKey
     };
 
     const response = await axios.get(GPT4O_API_URL, {
@@ -63,18 +78,72 @@ async function callGPT4oAPI(prompt, imageUrl = null, senderId = null) {
     });
 
     if (response.data && response.data.answer) {
-      console.log(`✅ GPT-4o API successful`);
+      console.log(`✅ API successful with ${isSecondaryAttempt ? 'SECONDARY' : 'PRIMARY'} key`);
+      
+      // If we successfully used secondary, keep using it
+      if (isSecondaryAttempt) {
+        activeApiKey = SECONDARY_API_KEY;
+        primaryFailed = true;
+      } else {
+        activeApiKey = PRIMARY_API_KEY;
+        primaryFailed = false;
+      }
+      
       return {
         response: response.data.answer,
         modelUsed: response.data.model_used,
-        success: true
+        success: true,
+        keyUsed: isSecondaryAttempt ? 'Secondary' : 'Primary'
       };
     } else {
-      throw new Error('Invalid response from GPT-4o API');
+      throw new Error('Invalid response from API');
     }
   } catch (error) {
-    console.error('GPT-4o API failed:', error.message);
-    throw error;
+    console.error(`API failed with ${isSecondaryAttempt ? 'SECONDARY' : 'PRIMARY'} key:`, error.message);
+    
+    // If primary key failed and we haven't tried secondary yet
+    if (!isSecondaryAttempt) {
+      console.log('🔄 Switching to secondary API key...');
+      primaryFailed = true;
+      activeApiKey = SECONDARY_API_KEY;
+      
+      // Retry with secondary key
+      try {
+        const params = {
+          ask: prompt,
+          model: 'gpt-4o',
+          uid: senderId || 'defaultUser',
+          roleplay: 'Smart Assistant',
+          max_tokens: '',
+          stream: false,
+          img_url: imageUrl || '',
+          api_key: SECONDARY_API_KEY
+        };
+
+        const retryResponse = await axios.get(GPT4O_API_URL, {
+          params: params,
+          timeout: 60000
+        });
+
+        if (retryResponse.data && retryResponse.data.answer) {
+          console.log(`✅ API successful with SECONDARY key (fallback)`);
+          return {
+            response: retryResponse.data.answer,
+            modelUsed: retryResponse.data.model_used,
+            success: true,
+            keyUsed: 'Secondary (Fallback)'
+          };
+        } else {
+          throw new Error('Invalid response from API with secondary key');
+        }
+      } catch (secondaryError) {
+        console.error('Both API keys failed:', secondaryError.message);
+        throw secondaryError;
+      }
+    } else {
+      // Both keys failed
+      throw error;
+    }
   }
 }
 
@@ -144,6 +213,7 @@ module.exports = {
 • Created: ${created}
 • Last active: ${lastActive}
 • Storage: memory/conversations.json
+• Active API Key: ${activeApiKey === PRIMARY_API_KEY ? 'Primary' : 'Secondary'}
 
 💡 Use "ai reset" to clear history`
             }, pageAccessToken);
@@ -169,23 +239,25 @@ module.exports = {
 
         let aiResponse = null;
         let modelUsed = null;
+        let keyUsed = null;
 
         try {
-            // Call GPT-4o API
+            // Call GPT-4o API with automatic fallback
             const result = await callGPT4oAPI(fullPrompt, imageUrl, senderId);
             aiResponse = result.response;
             modelUsed = result.modelUsed;
+            keyUsed = result.keyUsed;
         } catch (primaryError) {
-            console.error('GPT-4o API failed:', primaryError.message);
+            console.error('Both API keys failed:', primaryError.message);
             await sendMessage(senderId, {
-                text: header + '❌ GPT-4o API is currently unavailable. Please try again later.\n\n💡 Service might be temporarily down.' + footer
+                text: header + '❌ All API services are currently unavailable. Please try again later.\n\n💡 Service might be temporarily down.' + footer
             }, pageAccessToken);
             return;
         }
 
         if (!aiResponse) {
             await sendMessage(senderId, {
-                text: header + '❌ Failed to get response from GPT-4o. Please try again.' + footer
+                text: header + '❌ Failed to get response. Please try again.' + footer
             }, pageAccessToken);
             return;
         }
@@ -197,8 +269,8 @@ module.exports = {
         aiResponse = aiResponse.trim();
         aiResponse = makeBold(aiResponse);
 
-        // Add API indicator with model info
-        const modifiedHeader = `✨ | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (GPT-4o)\n・────────────・\n`;
+        // Add API indicator with model and key info
+        const modifiedHeader = `✨ | 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 (${keyUsed} Key)\n・────────────・\n`;
 
         const chunks = splitMessage(aiResponse);
 
