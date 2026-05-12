@@ -2,7 +2,7 @@ const axios = require('axios');
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
-    name: ['smsbomb],
+    name: ['smsbomb'],
     usage: 'smsbomber [phone] | [amount]',
     version: '1.0.0',
     author: 'AutoPageBot',
