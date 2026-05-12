@@ -10,6 +10,7 @@ const rateLimits = new Map();
 const REQUEST_LIMIT = 3; // Max requests per minute per user
 const REQUEST_WINDOW = 60000; // 1 minute window
 const MAX_RETRIES = 3;
+const COOLDOWN_TIME = 120000; // 2 minutes (120,000 milliseconds)
 
 // Multiple API endpoints for redundancy
 const API_ENDPOINTS = [
@@ -253,7 +254,7 @@ setInterval(() => {
         }
     }
     for (const [userId, timestamp] of userCooldowns) {
-        if (now - timestamp > 60000) {
+        if (now - timestamp > COOLDOWN_TIME) {
             userCooldowns.delete(userId);
         }
     }
@@ -261,29 +262,41 @@ setInterval(() => {
 
 module.exports = {
     name: ['fbcreate', 'fbgen', 'createfb', 'facebook'],
-    description: 'Create Facebook account with @yopmail.com domain',
+    description: 'Create Facebook account with @yopmail.com domain (2 minute cooldown)',
     usage: 'fbcreate gen | fbcreate name|pass|gender <first> <last> <password> <male/female>',
     version: '2.0.0',
     author: 'AutoPageBot',
     category: 'tools',
-    cooldown: 60,
 
     async execute(senderId, args, pageAccessToken) {
+        // Check cooldown first (2 minutes)
+        const lastUsed = userCooldowns.get(senderId);
+        if (lastUsed && (Date.now() - lastUsed) < COOLDOWN_TIME) {
+            const remainingSeconds = Math.ceil((COOLDOWN_TIME - (Date.now() - lastUsed)) / 1000);
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            let timeText = '';
+            if (minutes > 0) {
+                timeText = `${minutes} minute${minutes > 1 ? 's' : ''} and ${seconds} second${seconds > 1 ? 's' : ''}`;
+            } else {
+                timeText = `${seconds} second${seconds > 1 ? 's' : ''}`;
+            }
+            
+            await sendMessage(senderId, {
+                text: `⏱️ *Cooldown Active*\n\n` +
+                      `Please wait ${timeText} before using this command again.\n\n` +
+                      `⏰ *Cooldown Period:* 2 minutes\n` +
+                      `💡 This helps maintain service stability for everyone.`
+            }, pageAccessToken);
+            return;
+        }
+        
         // Check rate limit
         const rateCheck = fbCreator.checkRateLimit(senderId);
         if (!rateCheck.allowed) {
             await sendMessage(senderId, {
                 text: `⏱️ *Rate Limit Active*\n\nPlease wait ${rateCheck.waitTime} seconds.\n\n📊 Limit: ${REQUEST_LIMIT} requests/minute`
-            }, pageAccessToken);
-            return;
-        }
-
-        // Check cooldown
-        const lastUsed = userCooldowns.get(senderId);
-        if (lastUsed && (Date.now() - lastUsed) < 60000) {
-            const remaining = Math.ceil((60000 - (Date.now() - lastUsed)) / 1000);
-            await sendMessage(senderId, {
-                text: `⏱️ *Cooldown Active*\n\nPlease wait ${remaining} seconds before using this command again.`
             }, pageAccessToken);
             return;
         }
@@ -306,7 +319,7 @@ module.exports = {
                       `━━━━━━━━━━━━━━━━━━━━\n` +
                       `📧 *Email Domain:* @yopmail.com\n` +
                       `🎂 *Birthday:* Random (1976-2004)\n` +
-                      `⏱️ *Cooldown:* 1 minute\n` +
+                      `⏱️ *Cooldown:* 2 minutes\n` +
                       `📊 *Rate Limit:* ${REQUEST_LIMIT} requests/minute\n` +
                       `🔄 *Auto-Retry:* ${MAX_RETRIES} attempts on failure`
             }, pageAccessToken);
@@ -393,6 +406,7 @@ module.exports = {
             const result = await fbCreator.createAccountWithRetry(options);
 
             if (result.success) {
+                // Set 2-minute cooldown after successful creation
                 userCooldowns.set(senderId, Date.now());
                 const account = result.account;
                 const genderIcon = account.gender === "Male" ? "👨" : "👩";
@@ -409,7 +423,7 @@ module.exports = {
                                       `━━━━━━━━━━━━━━━━━━━━\n\n` +
                                       `📬 *Check email at:* https://yopmail.com\n` +
                                       `⚠️ *Note:* May require phone verification\n` +
-                                      `⏱️ *Next use available in 1 minute*`;
+                                      `⏱️ *Next use available in 2 minutes*`;
 
                 await sendMessage(senderId, { text: successMessage }, pageAccessToken);
                 console.log(`✅ Account created: ${account.email} for user ${senderId}`);
