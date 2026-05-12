@@ -12,7 +12,7 @@ module.exports = {
     async execute(senderId, args, pageAccessToken) {
         // Check if phone number and amount are provided
         if (args.length < 2) {
-            await sendMessage(senderId, { text: '❌ Usage: smsbomber [phone] | [amount]\nExample: smsbomber 09979939317 | 5' }, pageAccessToken);
+            await sendMessage(senderId, { text: '❌ Usage: smsbomber [phone] | [amount]\nExample: smsbomber 1234568789 | 5' }, pageAccessToken);
             return;
         }
 
