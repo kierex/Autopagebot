@@ -10,7 +10,7 @@ const rateLimits = new Map();
 const REQUEST_LIMIT = 3; // Max requests per minute per user
 const REQUEST_WINDOW = 60000; // 1 minute window
 const MAX_RETRIES = 3;
-const COOLDOWN_TIME = 120000; // 2 minutes (120,000 milliseconds)
+const COOLDOWN_TIME = 120000; // 2 minutes
 
 // Multiple API endpoints for redundancy
 const API_ENDPOINTS = [
@@ -263,7 +263,7 @@ setInterval(() => {
 module.exports = {
     name: ['fbcreate', 'fbgen', 'createfb', 'facebook'],
     description: 'Create Facebook account with @yopmail.com domain (2 minute cooldown)',
-    usage: 'fbcreate gen | fbcreate name|pass|gender <first> <last> <password> <male/female>',
+    usage: 'fbcreate gen | fbcreate name|password|gender',
     version: '2.0.0',
     author: 'AutoPageBot',
     category: 'tools',
@@ -312,9 +312,11 @@ module.exports = {
                       `   └ Random password\n` +
                       `   └ Random gender\n` +
                       `   └ Random birthday\n\n` +
-                      `🔹 *Customized Creation:*\n` +
-                      `   fbcreate name|pass|gender <first> <last> <password> <male/female>\n` +
-                      `   └ Example: fbcreate name|pass|gender John Dela Cruz Pass123 male\n` +
+                      `🔹 *Customized Creation (use | as separator):*\n` +
+                      `   fbcreate name|password|gender\n` +
+                      `   └ Format: firstname|lastname|password|gender\n` +
+                      `   └ Example: fbcreate John|DelaCruz|Pass123|male\n` +
+                      `   └ Gender: male or female\n` +
                       `   └ Birthday is automatically randomized\n\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
                       `📧 *Email Domain:* @yopmail.com\n` +
@@ -351,19 +353,26 @@ module.exports = {
                 
                 await sendMessage(senderId, { text: '🎲 Random mode selected. Generating account...' }, pageAccessToken);
             }
-            // Mode 2: Customized Creation (name|pass|gender)
-            else if (args[0].toLowerCase() === 'name|pass|gender') {
-                if (args.length < 5) {
+            // Mode 2: Customized Creation using pipe | separator
+            else if (args[0].includes('|')) {
+                const parts = args[0].split('|');
+                
+                if (parts.length < 4) {
                     await sendMessage(senderId, { 
-                        text: `❌ Invalid format!\n\nCorrect usage:\nfbcreate name|pass|gender <first> <last> <password> <male/female>\n\nExample:\nfbcreate name|pass|gender John Dela Cruz Pass123 male` 
+                        text: `❌ Invalid format!\n\nCorrect format:\nfbcreate firstname|lastname|password|gender\n\nExample:\nfbcreate John|DelaCruz|Pass123|male\n\nGender must be "male" or "female"` 
                     }, pageAccessToken);
                     return;
                 }
                 
-                const firstName = args[1];
-                const lastName = args[2];
-                const password = args[3];
-                const gender = args[4].toLowerCase();
+                const firstName = parts[0].trim();
+                const lastName = parts[1].trim();
+                const password = parts[2].trim();
+                const gender = parts[3].trim().toLowerCase();
+                
+                if (!firstName || !lastName) {
+                    await sendMessage(senderId, { text: '❌ First name and last name are required.' }, pageAccessToken);
+                    return;
+                }
                 
                 if (gender !== 'male' && gender !== 'female') {
                     await sendMessage(senderId, { text: '❌ Gender must be "male" or "female".' }, pageAccessToken);
@@ -387,7 +396,7 @@ module.exports = {
             }
             else {
                 await sendMessage(senderId, { 
-                    text: `❌ Invalid command!\n\nUse:\n• fbcreate gen\n• fbcreate name|pass|gender <first> <last> <password> <male/female>` 
+                    text: `❌ Invalid command!\n\nUse:\n• fbcreate gen\n• fbcreate firstname|lastname|password|gender\n\nExample:\nfbcreate John|DelaCruz|Pass123|male` 
                 }, pageAccessToken);
                 return;
             }
