@@ -27,9 +27,7 @@ module.exports = {
 • brat ang ganda mo
 
 💡 Create a brat-style text image with your message!
-🔤 Short text works best.
-
-🎨 Category: Downloader`
+🔤 Short text works best.`
             }, pageAccessToken);
         }
 
