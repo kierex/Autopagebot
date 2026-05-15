@@ -10,7 +10,7 @@ module.exports = {
     usage: 'ph <text1> | <text2>',
     version: '1.0.0',
     author: 'AutoPageBot',
-    category: 'image',
+    category: 'canvas',
     cooldown: 5,
 
     async execute(senderId, args, pageAccessToken) {
