@@ -61,7 +61,7 @@ class MemoryManager {
 
     getConversation(userId) {
         if (!userId) return null;
-        
+
         if (!this.conversations.has(userId)) {
             this.conversations.set(userId, {
                 messages: [],
@@ -75,10 +75,10 @@ class MemoryManager {
 
     addMessage(userId, role, content) {
         if (!userId) return;
-        
+
         const conv = this.getConversation(userId);
         if (!conv) return;
-        
+
         conv.messages.push({
             role: role,
             content: content || '',
@@ -97,10 +97,10 @@ class MemoryManager {
 
     getContext(userId, limit = 10) {
         if (!userId) return '';
-        
+
         const conv = this.getConversation(userId);
         if (!conv) return '';
-        
+
         const recentMessages = conv.messages.slice(-limit);
         let context = '';
         for (const msg of recentMessages) {
@@ -111,17 +111,17 @@ class MemoryManager {
 
     clearConversation(userId) {
         if (!userId) return;
-        
+
         this.conversations.delete(userId);
         this.save();
     }
 
     getStats(userId) {
         if (!userId) return null;
-        
+
         const conv = this.getConversation(userId);
         if (!conv) return null;
-        
+
         return {
             messageCount: conv.messageCount,
             lastActive: conv.lastActive,
@@ -372,10 +372,11 @@ app.get('/api/server/uptime', (req, res) => {
     res.json({ uptime: getServerUptime(), startTime: serverStartTime });
 });
 
-// Sessions API
+// Sessions API - returns token info for profile pictures
 app.get('/api/sessions', async (req, res) => {
     try {
         const sessions = await tokenManager.getAllSessions();
+        // Include token for profile picture fetching
         const sessionsWithDetails = sessions.map(s => ({
             id: s.id,
             name: s.name,
@@ -384,7 +385,8 @@ app.get('/api/sessions', async (req, res) => {
             connectedAt: s.connectedAt,
             lastActive: s.lastActive,
             messengerLink: s.messengerLink,
-            uptime: s.connectedAt ? Math.floor((Date.now() - new Date(s.connectedAt).getTime()) / 1000) : 0
+            uptime: s.connectedAt ? Math.floor((Date.now() - new Date(s.connectedAt).getTime()) / 1000) : 0,
+            token: s.token // Include token for profile picture API call
         }));
         res.json({ sessions: sessionsWithDetails, count: sessionsWithDetails.length, serverTime: new Date().toISOString(), serverUptime: getServerUptime() });
     } catch (error) {
@@ -561,7 +563,7 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', async (req, res) => {
     if (req.body.object !== 'page') return res.sendStatus(404);
     console.log(`📨 Webhook received: ${req.body.entry?.length || 0} entries`);
-    
+
     for (const entry of req.body.entry || []) {
         const pageId = entry.id;
         const tokenData = await tokenManager.getToken(pageId);
@@ -570,19 +572,19 @@ app.post('/webhook', async (req, res) => {
             continue;
         }
         await tokenManager.updateLastActive(pageId);
-        
+
         for (const event of entry.messaging || []) {
             try {
                 const senderId = event.sender?.id;
                 if (senderId) {
                     // Track message received
                     incrementMessageCount();
-                    
+
                     // Store in memory manager
                     const messageText = event.message?.text || '[Non-text message]';
                     memoryManager.addMessage(senderId, 'user', messageText);
                 }
-                
+
                 if (event.message) {
                     await handleMessage(event, tokenData.token, pageId);
                 } else if (event.postback) {
@@ -607,6 +609,30 @@ app.get('/api/tutorial', (req, res) => {
         docsUrl: 'https://developers.facebook.com/docs/messenger-platform',
         supportEmail: 'support@autopagebot.com'
     });
+});
+
+// Profile picture proxy endpoint
+app.get('/api/page-picture/:pageId', async (req, res) => {
+    const { pageId } = req.params;
+    const tokenData = await tokenManager.getToken(pageId);
+    
+    if (!tokenData || !tokenData.token) {
+        return res.status(404).json({ error: 'Page not found' });
+    }
+    
+    try {
+        const response = await fetch(`https://graph.facebook.com/v23.0/${pageId}/picture?type=large&redirect=false&access_token=${tokenData.token}`);
+        const data = await response.json();
+        
+        if (data && data.data && data.data.url) {
+            res.json({ url: data.data.url });
+        } else {
+            res.status(404).json({ error: 'No picture found' });
+        }
+    } catch (error) {
+        console.error('Error fetching profile picture:', error);
+        res.status(500).json({ error: 'Failed to fetch profile picture' });
+    }
 });
 
 // Error handling middleware
