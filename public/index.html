@@ -265,78 +265,118 @@
         .card h2, .card h3 { margin-bottom: 5px; }
         .card > p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 20px; }
 
-        /* Session Card with Profile Image */
+        /* ========== ACTIVE SESSIONS - PROFILE ON SIDE, DETAILS ALIGNED ========== */
+        .sessions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
         .session-card {
-            border-radius: 20px;
-            padding: 18px;
+            border-radius: 16px;
+            padding: 16px 20px;
             transition: all 0.25s;
             display: flex;
-            gap: 15px;
-            align-items: flex-start;
+            align-items: center;
+            gap: 16px;
         }
-        .session-card:hover { transform: translateY(-5px); }
 
-        /* Profile Thumbnail */
+        .session-card:hover {
+            transform: translateX(5px);
+        }
+
+        /* Profile Thumbnail - NASA GILID */
         .session-profile {
             flex-shrink: 0;
-            width: 60px;
-            height: 60px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
             overflow: hidden;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+
         .session-profile img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .session-profile .profile-placeholder {
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             color: white;
         }
-        .session-info {
+
+        /* Content area - PANTAY ANG MGA DETAILS */
+        .session-content {
             flex: 1;
         }
-        .session-header {
-            display: flex;
-            justify-content: space-between;
+
+        /* Page name row */
+        .session-name-row {
+            margin-bottom: 8px;
+        }
+
+        .session-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #667eea;
+            display: inline-flex;
             align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
             gap: 8px;
         }
-        .session-name { 
-            font-weight: 800; 
-            font-size: 1rem;
-        }
+
         .session-badge {
             background: #27ae60;
             color: white;
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 0.7rem;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            margin-left: 8px;
         }
-        .session-details { 
-            font-size: 0.75rem; 
-            line-height: 1.8;
+
+        /* Details grid - PANTAY ANG ALIGNMENT */
+        .session-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            font-size: 0.75rem;
         }
-        .session-details div {
-            margin-bottom: 4px;
+
+        .session-details .detail-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
+
         .session-details i {
-            width: 18px;
-            margin-right: 6px;
+            width: 16px;
+            font-size: 0.75rem;
             color: #667eea;
         }
-        .uptime-value { color: #27ae60; font-weight: 600; }
+
+        .session-details a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .session-details a:hover {
+            text-decoration: underline;
+        }
+
+        .uptime-value {
+            color: #27ae60;
+            font-weight: 600;
+        }
 
         /* Commands Styles */
         .commands-container { display: flex; flex-direction: column; gap: 20px; }
@@ -438,12 +478,6 @@
         }
         .copy-btn:hover { background: #5a67d8; transform: scale(0.96); }
 
-        .sessions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-            gap: 18px;
-        }
-
         .tutorial-step {
             background: rgba(255,255,255,0.04);
             border-radius: 20px;
@@ -537,13 +571,13 @@
             .main-content { margin-left: 0; max-width: 100%; padding: 16px; }
             .menu-toggle { display: block; }
             .dashboard-stats { grid-template-columns: 1fr 1fr; }
-            .sessions-grid { grid-template-columns: 1fr; }
+            .session-details { flex-direction: column; gap: 8px; }
         }
         @media (max-width: 500px) {
             .dashboard-stats { grid-template-columns: 1fr; }
-            .session-card { flex-direction: column; align-items: center; text-align: center; }
-            .session-profile { width: 80px; height: 80px; }
-            .session-header { justify-content: center; }
+            .session-card { flex-wrap: wrap; justify-content: center; text-align: center; }
+            .session-profile { width: 70px; height: 70px; }
+            .session-name-row { text-align: center; }
         }
     </style>
 </head>
@@ -995,23 +1029,24 @@
                 const html = data.sessions.map(s => {
                     const uptimeSec = Math.floor((now - new Date(s.connectedAt).getTime())/1000);
                     const profileImgUrl = getProfilePictureUrl(s.id);
-                    const firstLetter = s.name ? s.name.charAt(0).toUpperCase() : 'P';
                     
                     return `<div class="session-card">
                         <div class="session-profile">
-                            <img src="${profileImgUrl}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'profile-placeholder\'><i class=\'fab fa-facebook\'></i></div>';">
+                            <img src="${profileImgUrl}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'profile-placeholder\\'><i class=\\'fab fa-facebook\\'></i></div>';">
                         </div>
-                        <div class="session-info">
-                            <div class="session-header">
-                                <span class="session-name"><i class="fas fa-rocket"></i> ${escapeHtml(s.name)}</span>
-                                <span class="session-badge">● Online</span>
+                        <div class="session-content">
+                            <div class="session-name-row">
+                                <span class="session-name">
+                                    <i class="fas fa-rocket"></i> ${escapeHtml(s.name)}
+                                    <span class="session-badge">● Online</span>
+                                </span>
                             </div>
                             <div class="session-details">
-                                <div><i class="fas fa-id-card"></i> ID: ${s.id}</div>
-                                <div><i class="fas fa-user"></i> Owner: ${escapeHtml(s.owner || 'Unknown')}</div>
-                                <div><i class="fas fa-calendar-plus"></i> Connected: ${new Date(s.connectedAt).toLocaleString()}</div>
-                                <div><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime" data-sid="${s.id}">${formatUptime(uptimeSec)}</span></div>
-                                <div><i class="fab fa-facebook-messenger"></i> <a href="${s.messengerLink}" target="_blank" style="color:#667eea;">Open Messenger →</a></div>
+                                <span class="detail-item"><i class="fas fa-id-card"></i> ID: ${s.id}</span>
+                                <span class="detail-item"><i class="fas fa-user"></i> Owner: ${escapeHtml(s.owner || 'Unknown')}</span>
+                                <span class="detail-item"><i class="fas fa-calendar-plus"></i> Connected: ${new Date(s.connectedAt).toLocaleString()}</span>
+                                <span class="detail-item"><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime" data-sid="${s.id}">${formatUptime(uptimeSec)}</span></span>
+                                <span class="detail-item"><i class="fab fa-facebook-messenger"></i> <a href="${s.messengerLink}" target="_blank">Open Messenger →</a></span>
                             </div>
                         </div>
                     </div>`;
