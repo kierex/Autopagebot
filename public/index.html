@@ -7,7 +7,544 @@
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ---------- GLOBAL RESET & BASE ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ========== LIGHT MODE ========== */
+        body.light-mode {
+            background: #f5f7fa;
+            color: #1a1a2e;
+        }
+        body.light-mode .main-wrapper {
+            background: rgba(255, 255, 255, 0.92);
+        }
+        body.light-mode .card {
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        body.light-mode .sidebar {
+            background: rgba(255, 255, 255, 0.98);
+            border-right: 1px solid rgba(0,0,0,0.08);
+        }
+        body.light-mode .menu-item { color: #1f2937; }
+        body.light-mode .menu-item:hover { background: #f1f5f9; }
+        body.light-mode .menu-item.active {
+            background: linear-gradient(135deg, #667eea12 0%, #764ba212 100%);
+            color: #4f46e5;
+        }
+        body.light-mode .commands-category { background: #f8fafc; }
+        body.light-mode .command-item { background: white; }
+        body.light-mode .config-row { background: #f8fafc; }
+        body.light-mode .session-card { background: white; border: 1px solid #e2e8f0; }
+
+        /* ========== DARK MODE ========== */
+        body.dark-mode {
+            background: #0a0a12;
+            color: #eef2ff;
+        }
+        body.dark-mode .main-wrapper { background: rgba(10, 10, 18, 0.94); }
+        body.dark-mode .card { background: #12121f; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        body.dark-mode .sidebar { background: #0f0f1a; border-right: 1px solid #1e293b; }
+        body.dark-mode .menu-item { color: #cbd5e6; }
+        body.dark-mode .menu-item:hover { background: #1e293b; }
+        body.dark-mode .menu-item.active {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            color: #818cf8;
+        }
+        body.dark-mode .commands-category { background: #1a1a2a; }
+        body.dark-mode .command-item { background: #12121f; }
+        body.dark-mode .config-row { background: #1a1a2a; }
+        body.dark-mode .session-card { background: #1a1c2e; border: 1px solid #2d2d44; }
+
+        /* ========== LAYOUT & SIDEBAR ========== */
+        .main-wrapper {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 20px 0;
+            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+        }
+
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #667eea; border-radius: 10px; }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 20px;
+            max-width: calc(100% - 280px);
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar-logo {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid rgba(102,126,234,0.2);
+            margin-bottom: 20px;
+        }
+        .sidebar-logo h2 {
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .sidebar-logo p { font-size: 0.7rem; opacity: 0.6; margin-top: 5px; }
+
+        .sidebar-menu { flex: 1; }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            margin: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .menu-item i { width: 24px; font-size: 1.1rem; }
+        .menu-item:hover { transform: translateX(6px); background: rgba(102,126,234,0.1); }
+        .menu-item.active {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            color: #667eea;
+        }
+        .menu-badge {
+            margin-left: auto;
+            background: #27ae60;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+        }
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(102,126,234,0.2);
+            margin-top: 20px;
+        }
+        .sidebar-footer .menu-item { padding: 10px; margin: 0; }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 101;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 1.3rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .theme-toggle:hover { transform: scale(1.08) rotate(8deg); }
+
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            z-index: 102;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.35s ease forwards;
+        }
+        .section.active-section { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* BANNER WITH RED BREATHING BORDER */
+        .banner {
+            border-radius: 20px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            animation: breathBorder 2s ease-in-out infinite;
+        }
+        @keyframes breathBorder {
+            0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4), 0 10px 30px rgba(0,0,0,0.15); border: 2px solid rgba(220,38,38,0.3); }
+            50% { box-shadow: 0 0 0 12px rgba(220,38,38,0.15), 0 0 0 6px rgba(220,38,38,0.25); border: 2px solid rgba(220,38,38,0.9); }
+            100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4), 0 10px 30px rgba(0,0,0,0.15); border: 2px solid rgba(220,38,38,0.3); }
+        }
+        .banner img { width: 100%; height: auto; display: block; }
+
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .version {
+            font-size: 0.8rem;
+            background: rgba(102,126,234,0.2);
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-left: 8px;
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 15px;
+            transition: transform 0.25s ease;
+        }
+        .stat-card:hover { transform: translateY(-4px); }
+        .stat-card i { font-size: 1.5rem; margin-bottom: 8px; color: #667eea; }
+        .stat-card .label { font-size: 0.7rem; opacity: 0.7; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-card .value { font-size: 0.85rem; font-weight: 600; word-break: break-all; }
+
+        .card {
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 24px;
+            transition: all 0.25s ease;
+        }
+        .card h2, .card h3 { margin-bottom: 5px; }
+        .card > p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 20px; }
+
+        /* Session Card with Profile Thumbnail */
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 18px;
+        }
+        .session-card {
+            border-radius: 20px;
+            padding: 18px;
+            transition: all 0.25s;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        .session-card:hover { transform: translateY(-5px); }
+        
+        .session-avatar {
+            flex-shrink: 0;
+        }
+        .session-avatar img {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #667eea;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+        }
+        .session-avatar .default-avatar {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .session-info {
+            flex: 1;
+        }
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .session-name {
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .session-badge {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .session-details {
+            font-size: 0.75rem;
+            line-height: 1.8;
+        }
+        .session-details div {
+            margin-bottom: 4px;
+        }
+        .session-details i {
+            width: 18px;
+            margin-right: 6px;
+            color: #667eea;
+        }
+        .uptime-value {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        /* Commands Styles */
+        .commands-container { display: flex; flex-direction: column; gap: 20px; }
+        .commands-category { border-radius: 20px; overflow: hidden; }
+        .category-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px 20px;
+            color: white;
+            font-weight: 700;
+        }
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            padding: 15px;
+        }
+        .command-item {
+            padding: 10px 15px;
+            border-radius: 14px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .command-item:hover { transform: translateX(5px); background: rgba(102,126,234,0.08); }
+        .command-name { font-weight: 700; font-size: 0.9rem; color: #667eea; }
+        .command-usage { font-size: 0.7rem; opacity: 0.7; margin-top: 3px; font-family: monospace; }
+        .command-cooldown { font-size: 0.65rem; color: #27ae60; margin-top: 3px; }
+
+        /* Inputs & Forms */
+        .input-group { margin-bottom: 18px; }
+        .input-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: inherit;
+            color: inherit;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn-connect {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .btn-connect:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+        .btn-connect:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-disconnect {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .btn-disconnect:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(231,76,60,0.4); }
+
+        .config-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .config-label { font-weight: 600; font-size: 0.85rem; min-width: 120px; }
+        .config-value { flex: 1; font-family: monospace; font-size: 0.8rem; word-break: break-all; }
+        .copy-btn {
+            padding: 6px 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .copy-btn:hover { background: #5a67d8; transform: scale(0.96); }
+
+        .tutorial-step {
+            background: rgba(255,255,255,0.04);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .step-number {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: white;
+        }
+        .warning-box, .success-box {
+            padding: 12px;
+            border-radius: 14px;
+            margin: 12px 0;
+        }
+        .warning-box { background: rgba(231,76,60,0.12); border-left: 4px solid #e74c3c; }
+        .success-box { background: rgba(39,174,96,0.12); border-left: 4px solid #27ae60; }
+
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 14px;
+            display: none;
+        }
+        .message.success { background: #d4edda; color: #155724; display: block; }
+        .message.error { background: #f8d7da; color: #721c24; display: block; }
+        .message.info { background: #d1ecf1; color: #0c5460; display: block; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+        body.dark-mode .modal-content { background: #12121f; color: white; }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn-accept, .btn-decline {
+            flex: 1;
+            padding: 12px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-accept { background: #27ae60; color: white; }
+        .btn-decline { background: #e74c3c; color: white; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+
+        .loading { text-align: center; padding: 40px; opacity: 0.6; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 260px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; max-width: 100%; padding: 16px; }
+            .menu-toggle { display: block; }
+            .dashboard-stats { grid-template-columns: 1fr 1fr; }
+            .sessions-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 500px) {
+            .dashboard-stats { grid-template-columns: 1fr; }
+            .session-card { flex-direction: column; align-items: center; text-align: center; }
+            .session-header { justify-content: center; }
+        }
+    </style>
 </head>
 <body>
     <div id="particles-js"></div>
@@ -77,7 +614,6 @@
                     <p>Messenger Automation Platform</p>
                 </div>
 
-                <!-- BANNER WITH RED BREATHING BORDER -->
                 <div class="banner">
                     <img src="https://cdnb.artstation.com/p/assets/images/images/066/149/065/original/killer-rabbit-media-chinese-alleyway-export.gif?1692171513" alt="AutoPageBot Banner">
                 </div>
@@ -174,11 +710,11 @@
                 </div>
             </div>
 
-            <!-- Active Sessions Section -->
+            <!-- Active Sessions Section with Profile Thumbnails -->
             <div id="sessions-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-globe"></i> Active Sessions</h2>
-                    <p>All connected pages and their status. To disconnect, use the Connect Page section with your token.</p>
+                    <p>All connected pages and their status with profile thumbnails.</p>
                     <div id="sessionsList" class="sessions-grid">
                         <div class="loading">Loading sessions...</div>
                     </div>
@@ -189,7 +725,7 @@
             <div id="commands-section" class="section">
                 <div class="card">
                     <h2><i class="fas fa-terminal"></i> Available Commands</h2>
-                    <p>All available bot commands grouped by category. Type any command name directly (no prefix needed!).</p>
+                    <p>All available bot commands grouped by category. Type any command name directly!</p>
                     <div id="commandsList" class="commands-container">
                         <div class="loading">Loading commands...</div>
                     </div>
@@ -280,6 +816,313 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // particlesJS configuration
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 55, density: { enable: true, value_area: 800 } },
+                color: { value: "#667eea" },
+                shape: { type: "circle" },
+                opacity: { value: 0.4, random: true },
+                size: { value: 2.5, random: true },
+                line_linked: { enable: true, distance: 140, color: "#667eea", opacity: 0.28, width: 1 },
+                move: { enable: true, speed: 1.2, direction: "none", random: false, straight: false, out_mode: "out" }
+            },
+            interactivity: { detect_on: "canvas", events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" } } }
+        });
+
+        // Theme Management
+        let isDarkMode = localStorage.getItem('theme') === 'dark';
+        function applyTheme() {
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                document.body.classList.remove('light-mode');
+                document.querySelector('#themeToggleBtn i').className = 'fas fa-moon';
+            } else {
+                document.body.classList.add('light-mode');
+                document.body.classList.remove('dark-mode');
+                document.querySelector('#themeToggleBtn i').className = 'fas fa-sun';
+            }
+        }
+        applyTheme();
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            applyTheme();
+        });
+
+        // Sidebar Mobile Toggle
+        const sidebar = document.getElementById('sidebar');
+        document.getElementById('mobileMenuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
+        document.querySelectorAll('.menu-item[data-section]').forEach(item => {
+            item.addEventListener('click', () => { if (window.innerWidth <= 768) sidebar.classList.remove('open'); });
+        });
+
+        // Navigation
+        document.querySelectorAll('.menu-item[data-section]').forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.getAttribute('data-section');
+                document.querySelectorAll('.menu-item[data-section]').forEach(m => m.classList.remove('active'));
+                item.classList.add('active');
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+                document.getElementById(`${sectionId}-section`).classList.add('active-section');
+            });
+        });
+
+        // Utilities
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerHTML = msg;
+            msgDiv.className = `message ${type}`;
+            setTimeout(() => { msgDiv.style.display = 'none'; msgDiv.className = 'message'; }, 5000);
+        }
+        function copyToClipboardText(text) {
+            navigator.clipboard.writeText(text);
+            showMessage('📋 Copied!', 'success');
+        }
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const copyId = btn.getAttribute('data-copy');
+                if (copyId) copyToClipboardText(document.getElementById(copyId).textContent);
+                else copyToClipboardText(btn.getAttribute('data-copy-text'));
+            });
+        });
+
+        // Dashboard Info
+        function updateDateTime() { document.getElementById('datetime').textContent = new Date().toLocaleString(); }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+        if ('getBattery' in navigator) {
+            navigator.getBattery().then(b => {
+                const update = () => document.getElementById('battery').textContent = `${Math.round(b.level*100)}% ${b.charging ? '⚡' : '🔋'}`;
+                update();
+                b.addEventListener('levelchange', update);
+            });
+        } else { document.getElementById('battery').textContent = 'Not supported'; }
+        fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>document.getElementById('ip').textContent=d.ip).catch(()=>document.getElementById('ip').textContent='unavailable');
+        document.getElementById('useragent').textContent = navigator.userAgent.slice(0,50)+'...';
+
+        const webhookUrl = `${window.location.origin}/webhook`;
+        document.getElementById('webhookUrl').textContent = webhookUrl;
+        document.getElementById('tutorialWebhookUrl').textContent = webhookUrl;
+
+        // Connect & Disconnect Page
+        const agreeCheckbox = document.getElementById('agreeTerms');
+        const connectBtn = document.getElementById('connectBtn');
+        agreeCheckbox.addEventListener('change', () => { connectBtn.disabled = !agreeCheckbox.checked; });
+
+        document.getElementById('connectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!agreeCheckbox.checked) { showMessage('Please accept Privacy Policy', 'error'); return; }
+            const pageToken = document.getElementById('pageToken').value;
+            if (!pageToken) { showMessage('Page token required', 'error'); return; }
+            showMessage('<i class="fas fa-spinner fa-spin"></i> Connecting...', 'info');
+            connectBtn.disabled = true;
+            try {
+                const res = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pageToken: pageToken,
+                        userName: document.getElementById('userName').value,
+                        pageName: document.getElementById('pageName').value
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(`✅ ${data.message}`, 'success');
+                    document.getElementById('pageToken').value = '';
+                    loadSessions();
+                } else {
+                    showMessage(`❌ ${data.error}`, 'error');
+                }
+            } catch(err) { showMessage(`Failed: ${err.message}`, 'error'); }
+            finally { connectBtn.disabled = false; }
+        });
+
+        document.getElementById('disconnectByTokenBtn').addEventListener('click', async () => {
+            const pageToken = document.getElementById('pageToken').value;
+            if (!pageToken) { showMessage('Please enter the Page Token to disconnect', 'error'); return; }
+            showMessage('<i class="fas fa-spinner fa-spin"></i> Disconnecting...', 'info');
+            try {
+                const res = await fetch('/api/disconnect-by-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pageToken: pageToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(`✅ ${data.message}`, 'success');
+                    document.getElementById('pageToken').value = '';
+                    loadSessions();
+                } else {
+                    showMessage(`❌ ${data.error}`, 'error');
+                }
+            } catch(err) { showMessage(`Failed: ${err.message}`, 'error'); }
+        });
+
+        // Session Card with Profile Image
+        async function fetchPageProfilePicture(pageId, accessToken) {
+            try {
+                const response = await fetch(`https://graph.facebook.com/v23.0/${pageId}/picture?type=large&redirect=false&access_token=${accessToken}`);
+                const data = await response.json();
+                if (data && data.data && data.data.url) {
+                    return data.data.url;
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching profile picture:', error);
+                return null;
+            }
+        }
+
+        // Sessions Loader with Profile Thumbnails
+        let sessionStartTimes = new Map();
+        function formatUptime(sec) {
+            if(sec<0) sec=0;
+            let d=Math.floor(sec/86400), h=Math.floor((sec%86400)/3600), m=Math.floor((sec%3600)/60);
+            if(d>0) return `${d}d ${h}h`;
+            if(h>0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        // Cache for profile pictures
+        const profilePictureCache = new Map();
+
+        async function loadSessions() {
+            try {
+                const res = await fetch('/api/sessions');
+                const data = await res.json();
+                document.getElementById('menuBadgeCount').textContent = data.count;
+                document.getElementById('statusActiveSessions').textContent = data.count;
+
+                if (!data.sessions || data.sessions.length === 0) {
+                    document.getElementById('sessionsList').innerHTML = '<div class="loading"><i class="fas fa-plug"></i> No active sessions. Connect a page to get started!</div>';
+                    return;
+                }
+                
+                data.sessions.forEach(s => { if(!sessionStartTimes.has(s.id)) sessionStartTimes.set(s.id, new Date(s.connectedAt)); });
+                const now = Date.now();
+                
+                // Build HTML with profile images
+                const htmlArray = [];
+                for (const s of data.sessions) {
+                    const uptimeSec = Math.floor((now - new Date(s.connectedAt).getTime())/1000);
+                    const pageId = s.id;
+                    
+                    // Get profile picture URL
+                    let profilePicUrl = profilePictureCache.get(pageId);
+                    if (!profilePicUrl) {
+                        try {
+                            const picRes = await fetch(`https://graph.facebook.com/v23.0/${pageId}/picture?type=large&redirect=false&access_token=${s.token}`);
+                            const picData = await picRes.json();
+                            if (picData && picData.data && picData.data.url) {
+                                profilePicUrl = picData.data.url;
+                                profilePictureCache.set(pageId, profilePicUrl);
+                            }
+                        } catch (err) {
+                            console.error('Profile pic error:', err);
+                        }
+                    }
+                    
+                    const avatarHtml = profilePicUrl 
+                        ? `<img src="${profilePicUrl}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'default-avatar\'><i class=\'fab fa-facebook\'></i></div>'">`
+                        : `<div class="default-avatar"><i class="fab fa-facebook"></i></div>`;
+                    
+                    htmlArray.push(`<div class="session-card">
+                        <div class="session-avatar">
+                            ${avatarHtml}
+                        </div>
+                        <div class="session-info">
+                            <div class="session-header">
+                                <span class="session-name"><i class="fas fa-rocket"></i> ${escapeHtml(s.name)}</span>
+                                <span class="session-badge">● Online</span>
+                            </div>
+                            <div class="session-details">
+                                <div><i class="fas fa-id-card"></i> ID: ${s.id}</div>
+                                <div><i class="fas fa-user"></i> Owner: ${escapeHtml(s.owner || 'Unknown')}</div>
+                                <div><i class="fas fa-calendar-plus"></i> Connected: ${new Date(s.connectedAt).toLocaleString()}</div>
+                                <div><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime" data-sid="${s.id}">${formatUptime(uptimeSec)}</span></div>
+                                <div><i class="fab fa-facebook-messenger"></i> <a href="${s.messengerLink}" target="_blank" style="color:#667eea;">Open Messenger →</a></div>
+                            </div>
+                        </div>
+                    </div>`);
+                }
+                
+                document.getElementById('sessionsList').innerHTML = htmlArray.join('');
+
+                if(window.uptimeInterval) clearInterval(window.uptimeInterval);
+                window.uptimeInterval = setInterval(() => {
+                    document.querySelectorAll('.session-uptime').forEach(el => {
+                        const start = sessionStartTimes.get(el.dataset.sid);
+                        if(start) el.textContent = formatUptime(Math.floor((Date.now() - new Date(start).getTime())/1000));
+                    });
+                }, 1000);
+            } catch(e) { console.error(e); }
+        }
+
+        // Commands Loader
+        async function loadCommands() {
+            try {
+                const res = await fetch('/api/commands');
+                const data = await res.json();
+                document.getElementById('commandsBadgeCount').textContent = data.count;
+                document.getElementById('totalCommandsCount').textContent = data.count;
+                if(!data.commands || data.commands.length === 0) { document.getElementById('commandsList').innerHTML = '<div class="loading">No commands</div>'; return; }
+                const cats = {};
+                const catNames = { system:'⚙️ System', fun:'🎮 Fun', ai:'🤖 AI', tools:'🔧 Tools', custom:'📝 Custom', others:'📁 Others' };
+                data.commands.forEach(cmd => { let c = cmd.category || 'others'; if(!cats[c]) cats[c]=[]; cats[c].push(cmd); });
+                let html = '<div class="commands-container">';
+                for(let [cat, cmds] of Object.entries(cats)) {
+                    html += `<div class="commands-category"><div class="category-header">${catNames[cat] || cat.toUpperCase()} (${cmds.length})</div><div class="commands-grid">`;
+                    cmds.forEach(cmd => {
+                        html += `<div class="command-item">
+                                    <div class="command-name"><i class="fas fa-hashtag"></i> ${escapeHtml(cmd.name)}</div>
+                                    <div class="command-usage">${escapeHtml(cmd.usage)}</div>
+                                    ${cmd.cooldown>0?`<div class="command-cooldown"><i class="fas fa-hourglass-half"></i> ${cmd.cooldown}s</div>`:''}
+                                </div>`;
+                    });
+                    html += `</div></div>`;
+                }
+                html += `</div>`;
+                document.getElementById('commandsList').innerHTML = html;
+            } catch(e) { console.error(e); }
+        }
+
+        // Server Info
+        async function loadServerInfo() {
+            try {
+                const res = await fetch('/api/server/info');
+                const data = await res.json();
+                document.getElementById('serverUptime').textContent = formatUptime(data.uptime);
+                document.getElementById('serverStartTime').textContent = new Date(data.startTime).toLocaleString();
+                setInterval(async () => {
+                    try {
+                        const upt = await fetch('/api/server/uptime');
+                        const u = await upt.json();
+                        document.getElementById('serverUptime').textContent = formatUptime(u.uptime);
+                    } catch(e) {}
+                }, 1000);
+            } catch(e) {}
+        }
+
+        // Privacy Modal
+        let privacyAccepted = localStorage.getItem('privacyAccepted');
+        const modal = document.getElementById('privacyModal');
+        function acceptPrivacy() { localStorage.setItem('privacyAccepted', 'true'); modal.style.display = 'none'; showMessage('🎉 Welcome to AutoPageBot!', 'success'); }
+        function declinePrivacy() { localStorage.setItem('privacyAccepted', 'false'); modal.style.display = 'none'; showMessage('Accept policy to connect', 'error'); }
+        document.getElementById('acceptPrivacyBtn')?.addEventListener('click', acceptPrivacy);
+        document.getElementById('declinePrivacyBtn')?.addEventListener('click', declinePrivacy);
+        document.getElementById('privacyPolicyBtn')?.addEventListener('click', () => modal.style.display = 'flex');
+        document.getElementById('privacyLink')?.addEventListener('click', (e) => { e.preventDefault(); modal.style.display = 'flex'; });
+        document.getElementById('refreshBtn')?.addEventListener('click', () => location.reload());
+        if (!privacyAccepted) setTimeout(() => modal.style.display = 'flex', 300);
+
+        // Initialize
+        loadServerInfo();
+        loadSessions();
+        loadCommands();
+    </script>
 </body>
 </html>
