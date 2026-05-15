@@ -2,52 +2,107 @@ const { sendMessage } = require('../handles/sendMessage');
 const tokenManager = require('../handles/tokenManager');
 
 module.exports = {
-    name: ['config', 'addbot', 'addpage', 'connectpage', 'newbot', 'botconfig'],
+    name: ['config'],
     description: 'Add/Connect a Facebook page bot using Page Access Token. Also shows webhook config info.',
-    usage: 'addbot <page_token> [page_name] [owner_name] | addbot disconnect <token> | config',
+    usage: 'config | add | <page_token> | [page_name] | [owner_name]\nconfig | disconnect | <page_token>\nconfig | show',
     version: '1.0.0',
     author: 'AutoPageBot',
     category: 'system',
     cooldown: 10,
 
     async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
-        // Handle config command - show webhook info
-        if (args && args.length > 0 && args[0].toLowerCase() === 'config') {
+        // If no args or just 'config' command
+        if (!args || args.length === 0 || (args[0].toLowerCase() === 'config' && args.length === 1)) {
+            await showWebhookConfig(senderId, pageAccessToken);
+            return;
+        }
+
+        // Parse pipe-separated parameters
+        // Format: config | add | page_token | page_name | owner_name
+        // Or: config | disconnect | page_token
+        // Or: config | show
+        
+        const fullCommand = args.join(' ');
+        const parts = fullCommand.split('|').map(part => part.trim());
+        
+        // Remove the first element if it's 'config'
+        if (parts[0].toLowerCase() === 'config') {
+            parts.shift();
+        }
+        
+        if (parts.length === 0 || parts[0].toLowerCase() === 'show') {
             await showWebhookConfig(senderId, pageAccessToken);
             return;
         }
         
-        if (!args || args.length === 0) {
-            await sendMessage(senderId, { 
-                text: `🤖 *Add Bot Command Usage*\n\n` +
-                      `📌 *To add a new bot:*\n` +
-                      `addbot <PAGE_TOKEN> [page_name] [owner_name]\n\n` +
-                      `📝 *Example:*\n` +
-                      `addbot EAAH... "My Cool Page" "John Doe"\n\n` +
-                      `🔌 *To disconnect a bot:*\n` +
-                      `addbot disconnect <PAGE_TOKEN>\n\n` +
-                      `⚙️ *To see webhook config:*\n` +
-                      `config\n\n` +
-                      `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `🔧 *Facebook Webhook Setup:*\n\n` +
-                      `📡 *Webhook URL:*\n` +
-                      `https://automated-fbpagebot.onrender.com/webhook\n\n` +
-                      `🔐 *Verify Token:*\n` +
-                      `autopagebot\n\n` +
-                      `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `*Note:* Page Token is required. Page name and owner name are optional.`
-            }, pageAccessToken);
+        const action = parts[0].toLowerCase();
+        
+        // Handle disconnect action
+        if (action === 'disconnect') {
+            if (parts.length < 2) {
+                await sendMessage(senderId, { 
+                    text: `🔌 *Disconnect Bot Usage*\n\n` +
+                          `config | disconnect | <PAGE_TOKEN>\n\n` +
+                          `📝 *Example:*\n` +
+                          `config | disconnect | EAAH...\n\n` +
+                          `📋 *To see all connected pages, use:*\n` +
+                          `listsessions` 
+                }, pageAccessToken);
+                return;
+            }
+            await handleDisconnect(senderId, parts[1], pageAccessToken);
             return;
         }
         
-        // Check if it's a disconnect command
-        if (args[0].toLowerCase() === 'disconnect') {
-            await handleDisconnect(senderId, args.slice(1), pageAccessToken);
+        // Handle add action (addbot/addpage/connectpage/newbot/botconfig)
+        if (action === 'add') {
+            if (parts.length < 2) {
+                await sendMessage(senderId, { 
+                    text: `🤖 *Add Bot Usage*\n\n` +
+                          `📌 *To add a new bot:*\n` +
+                          `config | add | <PAGE_TOKEN> | [page_name] | [owner_name]\n\n` +
+                          `📝 *Examples:*\n` +
+                          `config | add | EAAH...\n` +
+                          `config | add | EAAH... | "My Cool Page"\n` +
+                          `config | add | EAAH... | "My Cool Page" | "John Doe"\n\n` +
+                          `🔌 *To disconnect a bot:*\n` +
+                          `config | disconnect | <PAGE_TOKEN>\n\n` +
+                          `⚙️ *To see webhook config:*\n` +
+                          `config\n\n` +
+                          `━━━━━━━━━━━━━━━━━━━━\n` +
+                          `🔧 *Facebook Webhook Setup:*\n\n` +
+                          `📡 *Webhook URL:*\n` +
+                          `https://automated-fbpagebot.onrender.com/webhook\n\n` +
+                          `🔐 *Verify Token:*\n` +
+                          `autopagebot\n\n` +
+                          `━━━━━━━━━━━━━━━━━━━━\n` +
+                          `*Note:* Page Token is required. Page name and owner name are optional.`
+                }, pageAccessToken);
+                return;
+            }
+            
+            const pageToken = parts[1];
+            const pageName = parts.length > 2 ? parts[2].replace(/^["']|["']$/g, '') : '';
+            const ownerName = parts.length > 3 ? parts[3].replace(/^["']|["']$/g, '') : '';
+            
+            await handleConnect(senderId, pageToken, pageName, ownerName, pageAccessToken);
             return;
         }
         
-        // Handle connect command
-        await handleConnect(senderId, args, pageAccessToken);
+        // If no valid action found, show help
+        await sendMessage(senderId, { 
+            text: `🤖 *Bot Configuration Commands*\n\n` +
+                  `📌 *Add a bot:*\n` +
+                  `config | add | <PAGE_TOKEN> | [page_name] | [owner_name]\n\n` +
+                  `🔌 *Disconnect a bot:*\n` +
+                  `config | disconnect | <PAGE_TOKEN>\n\n` +
+                  `⚙️ *Show webhook config:*\n` +
+                  `config\n\n` +
+                  `📝 *Examples:*\n` +
+                  `config | add | EAAH123...\n` +
+                  `config | add | EAAH123... | "My Page" | "John Doe"\n` +
+                  `config | disconnect | EAAH123...`
+        }, pageAccessToken);
     }
 };
 
@@ -73,9 +128,9 @@ async function showWebhookConfig(senderId, pageAccessToken) {
                               `7️⃣ Subscribe to events: messages, messaging_postbacks\n\n` +
                               `⚠️ *Important:* Make sure your server is publicly accessible!\n` +
                               `💡 For local testing, use ngrok or similar tunneling service.`;
-        
+
         await sendMessage(senderId, { text: configMessage }, pageAccessToken);
-        
+
     } catch (error) {
         console.error('Error showing webhook config:', error);
         await sendMessage(senderId, { text: `❌ Failed to get webhook config: ${error.message}` }, pageAccessToken);
@@ -83,62 +138,30 @@ async function showWebhookConfig(senderId, pageAccessToken) {
 }
 
 // Handle connecting a new page
-async function handleConnect(senderId, args, pageAccessToken) {
+async function handleConnect(senderId, pageToken, pageName, ownerName, pageAccessToken) {
     try {
-        let pageToken = args[0];
-        let pageName = '';
-        let ownerName = '';
-        
-        // Parse optional arguments
-        if (args.length > 1) {
-            // Check if there are quoted strings or just plain arguments
-            const fullArgs = args.join(' ');
-            const match = fullArgs.match(/"([^"]+)"|'([^']+)'|(\S+)/g);
-            
-            if (match && match.length > 1) {
-                // Remove quotes if present
-                let nameIndex = 1;
-                if (match[1] && (match[1].startsWith('"') || match[1].startsWith("'"))) {
-                    pageName = match[1].replace(/^["']|["']$/g, '');
-                    nameIndex = 2;
-                } else {
-                    pageName = match[1];
-                    nameIndex = 2;
-                }
-                
-                if (match[nameIndex] && (match[nameIndex].startsWith('"') || match[nameIndex].startsWith("'"))) {
-                    ownerName = match[nameIndex].replace(/^["']|["']$/g, '');
-                } else if (match[nameIndex]) {
-                    ownerName = match[nameIndex];
-                }
-            } else if (args.length > 1) {
-                pageName = args[1];
-                if (args.length > 2) ownerName = args[2];
-            }
-        }
-        
         // Validate token format
         if (!pageToken || pageToken.length < 20) {
             await sendMessage(senderId, { text: '❌ Invalid Page Token. Please provide a valid Facebook Page Access Token.' }, pageAccessToken);
             return;
         }
-        
+
         await sendMessage(senderId, { text: '🔄 Verifying token and connecting page...' }, pageAccessToken);
-        
+
         // Verify token and get page info
         const response = await fetch(`https://graph.facebook.com/v23.0/me?access_token=${pageToken}`);
         const data = await response.json();
-        
+
         if (data.error) {
             await sendMessage(senderId, { text: `❌ Invalid Token: ${data.error.message}\n\nPlease check your Page Access Token and try again.` }, pageAccessToken);
             return;
         }
-        
+
         const pageId = data.id;
         const name = pageName || data.name || 'Unnamed Page';
         const username = data.username || pageId;
         const finalOwnerName = ownerName || 'Connected via Command';
-        
+
         // Check if page already connected
         const existing = await tokenManager.getToken(pageId);
         if (existing) {
@@ -147,11 +170,11 @@ async function handleConnect(senderId, args, pageAccessToken) {
                       `📄 Page ID: ${pageId}\n` +
                       `👤 Connected by: ${existing.owner}\n` +
                       `📅 Connected at: ${new Date(existing.connectedAt).toLocaleString()}\n\n` +
-                      `🔌 To disconnect, use: addbot disconnect ${pageToken.substring(0, 20)}...` 
+                      `🔌 To disconnect, use: config | disconnect | ${pageToken.substring(0, 20)}...` 
             }, pageAccessToken);
             return;
         }
-        
+
         // Add the token
         await tokenManager.addToken(pageId, {
             token: pageToken,
@@ -163,7 +186,7 @@ async function handleConnect(senderId, args, pageAccessToken) {
             connectedVia: 'command',
             connectedBy: senderId
         });
-        
+
         // Setup webhook for the page
         try {
             await setupPageWebhook(pageId, pageToken);
@@ -171,7 +194,7 @@ async function handleConnect(senderId, args, pageAccessToken) {
             console.error('Webhook setup error:', webhookError);
             // Continue even if webhook setup fails - can be configured manually
         }
-        
+
         // Send success message with webhook config
         const successMessage = `✅ *Bot Connected Successfully!*\n\n` +
                               `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -189,19 +212,19 @@ async function handleConnect(senderId, args, pageAccessToken) {
                               `━━━━━━━━━━━━━━━━━━━━\n\n` +
                               `💡 *Messenger Link:*\nm.me/${username}\n\n` +
                               `🔌 *To disconnect this page:*\n` +
-                              `addbot disconnect ${pageToken.substring(0, 15)}...\n\n` +
+                              `config | disconnect | ${pageToken.substring(0, 15)}...\n\n` +
                               `⚙️ *To see webhook config again:*\n` +
                               `config`;
-        
+
         await sendMessage(senderId, { text: successMessage }, pageAccessToken);
-        
+
         // Also send a test message
         setTimeout(async () => {
             await sendMessage(senderId, { text: '🎉 Bot is now active! Make sure your webhook is properly configured in Facebook App.' }, pageAccessToken);
         }, 2000);
-        
+
         console.log(`✅ New bot connected via command: ${name} (${pageId}) by ${finalOwnerName}`);
-        
+
     } catch (error) {
         console.error('Error in handleConnect:', error);
         await sendMessage(senderId, { text: `❌ Failed to connect page: ${error.message}\n\nPlease try again later.` }, pageAccessToken);
@@ -209,61 +232,46 @@ async function handleConnect(senderId, args, pageAccessToken) {
 }
 
 // Handle disconnecting a page
-async function handleDisconnect(senderId, args, pageAccessToken) {
+async function handleDisconnect(senderId, pageToken, pageAccessToken) {
     try {
-        if (args.length === 0) {
-            await sendMessage(senderId, { 
-                text: `🔌 *Disconnect Bot Usage*\n\n` +
-                      `To disconnect a bot, provide the Page Token:\n` +
-                      `addbot disconnect <PAGE_TOKEN>\n\n` +
-                      `📝 *Example:*\n` +
-                      `addbot disconnect EAAH...\n\n` +
-                      `📋 *To see all connected pages, use:*\n` +
-                      `listsessions` 
-            }, pageAccessToken);
-            return;
-        }
-        
-        const pageToken = args[0];
-        
         if (!pageToken || pageToken.length < 10) {
             await sendMessage(senderId, { text: '❌ Please provide a valid Page Token to disconnect.' }, pageAccessToken);
             return;
         }
-        
+
         await sendMessage(senderId, { text: '🔄 Verifying token and finding page...' }, pageAccessToken);
-        
+
         // Verify token to get page ID
         const response = await fetch(`https://graph.facebook.com/v23.0/me?access_token=${pageToken}`);
         const data = await response.json();
-        
+
         if (data.error) {
             await sendMessage(senderId, { text: `❌ Invalid Token: ${data.error.message}\n\nCannot identify page to disconnect.` }, pageAccessToken);
             return;
         }
-        
+
         const pageId = data.id;
         const tokenData = await tokenManager.getToken(pageId);
-        
+
         if (!tokenData) {
             await sendMessage(senderId, { text: `❌ No active session found for this token.\n\nPage ID: ${pageId}\nThis page is not connected to this bot.` }, pageAccessToken);
             return;
         }
-        
-        // Perform disconnect without confirmation for simplicity
+
+        // Perform disconnect
         await tokenManager.removeToken(pageId);
-        
+
         const successMessage = `✅ *Page Disconnected Successfully!*\n\n` +
                               `📄 Page: ${tokenData.name}\n` +
                               `🆔 ID: ${pageId}\n` +
                               `👤 Owner: ${tokenData.owner}\n` +
                               `📅 Connected until: ${new Date(tokenData.connectedAt).toLocaleString()}\n\n` +
                               `The bot will no longer respond to messages from this page.\n\n` +
-                              `💡 To reconnect, use: addbot <new_token>`;
-        
+                              `💡 To reconnect, use: config | add | <new_token>`;
+
         await sendMessage(senderId, { text: successMessage }, pageAccessToken);
         console.log(`🔌 Page disconnected via command: ${tokenData.name} (${pageId}) by ${senderId}`);
-        
+
     } catch (error) {
         console.error('Error in handleDisconnect:', error);
         await sendMessage(senderId, { text: `❌ Failed to disconnect: ${error.message}` }, pageAccessToken);
@@ -275,17 +283,17 @@ async function setupPageWebhook(pageId, pageToken) {
     try {
         const webhookUrl = 'https://automated-fbpagebot.onrender.com/webhook';
         const verifyToken = 'autopagebot';
-        
+
         // Subscribe app to page
         const subscribeRes = await fetch(`https://graph.facebook.com/v23.0/${pageId}/subscribed_apps?access_token=${pageToken}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (subscribeRes.ok) {
             console.log(`✅ Webhook subscription configured for page ${pageId}`);
         }
-        
+
         // Set up messenger profile webhook
         await fetch(`https://graph.facebook.com/v23.0/me/messenger_profile?access_token=${pageToken}`, {
             method: 'POST',
@@ -298,7 +306,7 @@ async function setupPageWebhook(pageId, pageToken) {
                 fields: ['messages', 'messaging_postbacks', 'messaging_optins']
             })
         }).catch(() => null);
-        
+
     } catch (error) {
         console.error(`Failed to setup webhook for ${pageId}:`, error.message);
         // Don't throw - webhook can be set up manually
