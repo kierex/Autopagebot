@@ -10,13 +10,13 @@ module.exports = {
     usage: 'brat [text]',
     version: '1.0.0',
     author: 'AutoPageBot',
-    category: 'downloader',
+    category: 'canvas',
     cooldown: 5,
 
     async execute(senderId, args, pageAccessToken) {
         if (!args.length) {
             return sendMessage(senderId, {
-                text: `🎵 BRAT TEXT GENERATOR
+                text: ` 📝 BRAT TEXT GENERATOR
 
 📝 Usage: brat [your text]
 
@@ -41,7 +41,7 @@ module.exports = {
 
         // Send loading message
         await sendMessage(senderId, { 
-            text: '🎵 Creating your brat text image... Please wait.' 
+            text: '📝 Creating your brat text image... Please wait.' 
         }, pageAccessToken);
 
         try {
