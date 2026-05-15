@@ -1,41 +1,45 @@
-const axios = require('axios');
+const axios = require("axios");
 const { sendMessage } = require('../handles/sendMessage');
 
 module.exports = {
-    name: ['feedback', 'report', 'suggest'],
-    usage: 'feedback <your message>',
-    version: '1.0.0',
-    author: 'AutoPageBot',
+    name: 'feedback',
+    aliases: ['fb', 'feed', 'comment'],
+    description: 'Collects user feedback about the bot',
+    usage: 'feedback <your feedback message>',
+    author: 'cliff',
     category: 'system',
-    cooldown: 30,
+    cooldown: 60,
 
-    async execute(senderId, args, pageAccessToken, event, sendMessageFunc, imageCache) {
-        // Admin configuration
-        const ADMIN_UID = '6158923309617'; // Admin Facebook UID
-        const ADMIN_PAGE_TOKEN = pageAccessToken; // Using same page token
-        
-        // Check if message is provided
+    async execute(senderId, args, token, event, sendMessageFunc, imageCache) {
+        // Admin UID
+        const ADMIN_UID = '6158923309617';
+
+        // If no feedback message provided
         if (!args || args.length === 0) {
-            await sendMessage(senderId, { 
+            await sendMessage(senderId, {
                 text: `📝 FEEDBACK COMMAND
 
-📌 Usage: feedback <your message>
+Hi! I'd love to hear your thoughts about me.
+
+📌 How to use:
+feedback <your message>
 
 ✨ Examples:
-• feedback The bot is awesome!
-• feedback I found a bug when using download command
-• feedback Suggestion: Add more commands
-• feedback Report: Command not working
+• feedback The bot is very helpful!
+• feedback I love the download command
+• feedback Suggestion: Add more features
+• feedback Bug: The spotify command isn't working
 
-💡 Your feedback helps improve the bot!
-🔒 Messages are sent privately to admin.
+💡 Your feedback helps me improve!
+🔒 Messages are sent privately to the admin.
 
-📝 Aliases: report, suggest`
-            }, pageAccessToken);
+Thank you for helping make me better! 🙏`
+            }, token);
             return;
         }
 
-        const feedbackMessage = args.join(' ');
+        // Get user's feedback message
+        const userFeedback = args.join(' ');
         const timestamp = new Date().toLocaleString('en-PH', {
             timeZone: 'Asia/Manila',
             year: 'numeric',
@@ -47,112 +51,110 @@ module.exports = {
             hour12: true
         });
 
-        // Send confirmation to user
-        await sendMessage(senderId, { 
-            text: `📝 Feedback received!
+        // Fetch user profile info
+        let userName = 'Facebook User';
+        let profilePicUrl = '';
+        let userLocale = '';
 
-✅ Your message has been sent to the admin.
-
-📋 Your feedback:
-"${feedbackMessage}"
-
-📅 Sent at: ${timestamp}
-
-🙏 Thank you for your feedback!`
-        }, pageAccessToken);
-
-        // Try to get user info for better feedback context
-        let userName = 'Unknown User';
-        let userProfileUrl = '';
-        
         try {
-            const userInfo = await axios.get(`https://graph.facebook.com/v23.0/${senderId}?access_token=${pageAccessToken}&fields=name,profile_pic`);
-            if (userInfo.data && userInfo.data.name) {
-                userName = userInfo.data.name;
-                userProfileUrl = userInfo.data.profile_pic || '';
+            const userInfo = await axios.get(`https://graph.facebook.com/me?fields=id,name,picture.width(720).height(720).as(picture_large),locale&access_token=${token}`);
+            
+            if (userInfo.data) {
+                userName = userInfo.data.name || 'Facebook User';
+                if (userInfo.data.picture_large && userInfo.data.picture_large.data) {
+                    profilePicUrl = userInfo.data.picture_large.data.url;
+                }
+                userLocale = userInfo.data.locale || 'Unknown';
             }
         } catch (error) {
-            console.error('Failed to fetch user info:', error.message);
+            console.error('Error fetching user info:', error.message);
         }
 
-        // Determine feedback type
-        let feedbackType = 'General Feedback';
-        const commandUsed = args[0].toLowerCase();
-        if (commandUsed === 'report') {
-            feedbackType = 'Bug Report';
-        } else if (commandUsed === 'suggest') {
-            feedbackType = 'Suggestion';
-        }
+        // Send confirmation to user
+        await sendMessage(senderId, {
+            text: `✅ Feedback Received!
+
+Thank you ${userName} for your feedback! 🙏
+
+📋 Your message:
+"${userFeedback}"
+
+📅 Sent: ${timestamp}
+
+The admin will review your feedback and may respond to you directly.
+
+💡 To send another feedback, just use: feedback <message>`
+        }, token);
 
         // Prepare feedback for admin
-        const adminFeedback = `📝 NEW FEEDBACK RECEIVED
+        const adminMessage = `📝 NEW FEEDBACK FROM USER
 
 ━━━━━━━━━━━━━━━━━━━━
-👤 USER INFORMATION
+👤 USER DETAILS
 ━━━━━━━━━━━━━━━━━━━━
-• Name: ${userName}
-• UID: ${senderId}
-• Profile: https://facebook.com/${senderId}
+Name: ${userName}
+UID: ${senderId}
+Locale: ${userLocale}
+Profile: https://facebook.com/${senderId}
 
 ━━━━━━━━━━━━━━━━━━━━
-💬 FEEDBACK MESSAGE
+💬 FEEDBACK
 ━━━━━━━━━━━━━━━━━━━━
-"${feedbackMessage}"
+"${userFeedback}"
 
 ━━━━━━━━━━━━━━━━━━━━
-📅 TIMESTAMP
+📅 RECEIVED
 ━━━━━━━━━━━━━━━━━━━━
 ${timestamp}
 
 ━━━━━━━━━━━━━━━━━━━━
-🔧 FEEDBACK TYPE
+📊 FEEDBACK STATS
 ━━━━━━━━━━━━━━━━━━━━
-${feedbackType}
+Word Count: ${userFeedback.split(' ').length}
+Char Count: ${userFeedback.length}
+Type: ${userFeedback.toLowerCase().includes('bug') ? 'Bug Report' : 
+       userFeedback.toLowerCase().includes('suggest') ? 'Suggestion' : 
+       userFeedback.toLowerCase().includes('love') || userFeedback.toLowerCase().includes('good') ? 'Positive' : 
+       'General'}
 
 ━━━━━━━━━━━━━━━━━━━━
-💡 REPLY TO THIS USER
+💡 QUICK REPLY
 ━━━━━━━━━━━━━━━━━━━━
-Use: reply ${senderId} <your message>`;
+reply ${senderId} <your response>`;
 
         try {
-            // Send to admin via Messenger
+            // Send text feedback to admin
             await axios.post(
-                `https://graph.facebook.com/v23.0/me/messages?access_token=${ADMIN_PAGE_TOKEN}`,
+                `https://graph.facebook.com/v23.0/me/messages?access_token=${token}`,
                 {
                     recipient: { id: ADMIN_UID },
-                    message: { text: adminFeedback }
+                    message: { text: adminMessage }
                 }
             );
 
-            // If user provided profile picture, send it as attachment
-            if (userProfileUrl) {
-                try {
-                    await axios.post(
-                        `https://graph.facebook.com/v23.0/me/messages?access_token=${ADMIN_PAGE_TOKEN}`,
-                        {
-                            recipient: { id: ADMIN_UID },
-                            message: {
-                                attachment: {
-                                    type: 'image',
-                                    payload: { url: userProfileUrl, is_reusable: true }
-                                }
+            // Send user's profile picture to admin if available
+            if (profilePicUrl) {
+                await axios.post(
+                    `https://graph.facebook.com/v23.0/me/messages?access_token=${token}`,
+                    {
+                        recipient: { id: ADMIN_UID },
+                        message: {
+                            attachment: {
+                                type: 'image',
+                                payload: { url: profilePicUrl, is_reusable: true }
                             }
                         }
-                    );
-                } catch (imageError) {
-                    console.error('Failed to send profile image:', imageError.message);
-                }
+                    }
+                );
             }
 
-            console.log(`✅ Feedback sent to admin ${ADMIN_UID} from user ${senderId}`);
+            console.log(`✅ Feedback forwarded to admin ${ADMIN_UID} from ${userName} (${senderId})`);
 
         } catch (error) {
             console.error('Failed to send feedback to admin:', error.message);
             
-            // Notify user if admin delivery failed
-            await sendMessage(senderId, { 
-                text: `⚠️ Your feedback was received but couldn't be delivered to admin due to technical issues. The developers have been notified.`
-            }, pageAccessToken);
+            // Notify user but don't alarm them
+            console.log(`⚠️ Feedback from ${userName} couldn't reach admin due to: ${error.message}`);
         }
     }
 };
