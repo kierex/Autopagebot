@@ -998,7 +998,7 @@
             } catch(err) { showMessage(`Failed: ${err.message}`, 'error'); }
         });
 
-        // Sessions Loader with Profile Thumbnails
+        // Sessions Loader with Profile Thumbnails (Connected line removed)
         let sessionStartTimes = new Map();
         function formatUptime(sec) {
             if(sec<0) sec=0;
@@ -1044,7 +1044,6 @@
                             <div class="session-details">
                                 <span class="detail-item"><i class="fas fa-id-card"></i> ID: ${s.id}</span>
                                 <span class="detail-item"><i class="fas fa-user"></i> Owner: ${escapeHtml(s.owner || 'Unknown')}</span>
-                                <span class="detail-item"><i class="fas fa-calendar-plus"></i> Connected: ${new Date(s.connectedAt).toLocaleString()}</span>
                                 <span class="detail-item"><i class="fas fa-chart-line"></i> Uptime: <span class="uptime-value session-uptime" data-sid="${s.id}">${formatUptime(uptimeSec)}</span></span>
                                 <span class="detail-item"><i class="fab fa-facebook-messenger"></i> <a href="${s.messengerLink}" target="_blank">Open Messenger →</a></span>
                             </div>
