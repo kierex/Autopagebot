@@ -1,21 +1,30 @@
 const { readFile, writeFile } = require('fs/promises');
 const path = require('path');
 
-const TOKENS_FILE = path.join(__dirname, '../tokens.json');
-const STATS_FILE = path.join(__dirname, '../stats.json');
+// Use storage folder for tokens
+const STORAGE_DIR = path.join(__dirname, '../storage');
+const TOKENS_FILE = path.join(STORAGE_DIR, 'tokens.json');
+const STATS_FILE = path.join(STORAGE_DIR, 'stats.json');
+
 let pageTokens = new Map();
 let totalMessages = 0;
 
 const loadTokens = async () => {
     try {
+        // Ensure storage directory exists
+        const fs = require('fs');
+        if (!fs.existsSync(STORAGE_DIR)) {
+            fs.mkdirSync(STORAGE_DIR, { recursive: true });
+        }
+        
         const data = await readFile(TOKENS_FILE, 'utf8').catch(() => '{}');
         const tokens = JSON.parse(data);
-        
+
         for (const [pageId, tokenData] of Object.entries(tokens)) {
             pageTokens.set(pageId, tokenData);
         }
-        
-        console.log(`✅ Loaded ${pageTokens.size} page tokens`);
+
+        console.log(`✅ Loaded ${pageTokens.size} page tokens from ${TOKENS_FILE}`);
         return pageTokens;
     } catch (error) {
         console.error('Error loading tokens:', error.message);
@@ -38,6 +47,7 @@ const loadStats = async () => {
         const data = await readFile(STATS_FILE, 'utf8').catch(() => '{}');
         const stats = JSON.parse(data);
         totalMessages = stats.totalMessages || 0;
+        console.log(`📊 Loaded stats: ${totalMessages} total messages`);
     } catch (error) {
         console.error('Error loading stats:', error.message);
     }
@@ -73,7 +83,8 @@ const getAllSessions = async () => {
             connectedAt: data.connectedAt,
             messengerLink: `https://m.me/${pageId}`,
             ip: data.ip,
-            userAgent: data.userAgent
+            userAgent: data.userAgent,
+            token: data.token // Include token for profile picture API
         });
     }
     // Sort by connectedAt (newest first)
@@ -103,7 +114,6 @@ const getSessionCount = () => {
     return pageTokens.size;
 };
 
-// Optional: Remove token (admin only, not exposed via API)
 const removeToken = async (pageId) => {
     const deleted = pageTokens.delete(pageId);
     if (deleted) {
