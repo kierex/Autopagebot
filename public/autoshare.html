@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AutoShare - Facebook Post Sharer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header h1 i {
+            margin-right: 10px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2 i {
+            color: #667eea;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .input-group label i {
+            margin-right: 6px;
+            color: #667eea;
+        }
+
+        .input-group input, 
+        .input-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .input-group input:focus, 
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 30px;
+            min-height: 200px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-header i {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        .result-header h3 {
+            font-size: 1.2rem;
+            color: #1a1a2e;
+        }
+
+        .result-content {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            text-align: center;
+            padding: 30px;
+            color: #e74c3c;
+        }
+
+        .error i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .success-result {
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #27ae60;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .info-box {
+            background: #e6f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .info-box i {
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .card, .result-section {
+                background: rgba(18, 18, 30, 0.95);
+            }
+            .card h2, .result-header h3 {
+                color: #eef2ff;
+            }
+            .input-group label {
+                color: #cbd5e6;
+            }
+            .input-group input, .input-group textarea {
+                background: #1a1a2e;
+                color: white;
+                border-color: #2d2d44;
+            }
+            .stat-card {
+                background: #1a1c2e;
+            }
+            .stat-label {
+                color: #94a3b8;
+            }
+            .info-box {
+                background: #1a2a3a;
+                color: #cbd5e6;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+        <div class="header">
+            <h1><i class="fas fa-share-alt"></i> AutoShare Tool</h1>
+            <p>Automatically share Facebook posts with your accounts</p>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-info-circle"></i> Configuration</h2>
+            
+            <div class="info-box">
+                <i class="fas fa-lightbulb"></i>
+                <strong>How it works:</strong> This tool will automatically share a Facebook post using your Facebook cookies. The more cookies you provide, the faster the process.
+            </div>
+
+            <div class="input-group">
+                <label><i class="fas fa-key"></i> Facebook Cookies</label>
+                <textarea id="cookieInput" placeholder="Enter your Facebook cookies here...
+You can provide multiple cookies separated by semicolon (;)
+Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
+            </div>
+
+            <div class="input-group">
+                <label><i class="fas fa-link"></i> Post Link</label>
+                <input type="text" id="linkInput" placeholder="https://facebook.com/... or https://fb.com/...">
+            </div>
+
+            <div class="input-row">
+                <div class="input-group">
+                    <label><i class="fas fa-chart-line"></i> Share Limit</label>
+                    <input type="number" id="limitInput" placeholder="Enter number of shares (no maximum)" value="10" min="1">
+                </div>
+                <div class="input-group">
+                    <label>&nbsp;</label>
+                    <button class="btn" id="startBtn"><i class="fas fa-play"></i> Start AutoShare</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-header">
+                <i class="fas fa-clock"></i>
+                <h3>Ready to Start</h3>
+            </div>
+            <div class="result-content">
+                <i class="fas fa-share-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 15px; display: block;"></i>
+                <p>Enter your Facebook cookies and post link above, then click "Start AutoShare".</p>
+                <p style="font-size: 0.8rem; margin-top: 10px; color: #64748b;">⚠️ No maximum limit - share as many times as you want!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_URL = "https://vern-rest-api.vercel.app/api/share";
+
+        let isProcessing = false;
+
+        const startBtn = document.getElementById('startBtn');
+        const cookieInput = document.getElementById('cookieInput');
+        const linkInput = document.getElementById('linkInput');
+        const limitInput = document.getElementById('limitInput');
+        const resultSection = document.getElementById('resultSection');
+
+        startBtn.addEventListener('click', async () => {
+            if (isProcessing) {
+                showError('A process is already running. Please wait.');
+                return;
+            }
+
+            const cookie = cookieInput.value.trim();
+            const link = linkInput.value.trim();
+            const limit = parseInt(limitInput.value);
+
+            if (!cookie) {
+                showError('Please enter your Facebook cookies');
+                return;
+            }
+
+            if (!link) {
+                showError('Please enter the Facebook post link');
+                return;
+            }
+
+            if (!link.includes('facebook.com') && !link.includes('fb.com')) {
+                showError('Please enter a valid Facebook post link');
+                return;
+            }
+
+            if (isNaN(limit) || limit < 1) {
+                showError('Please enter a valid share limit (minimum 1)');
+                return;
+            }
+
+            isProcessing = true;
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Processing...';
+
+            showLoading();
+
+            try {
+                const encodedCookie = encodeURIComponent(cookie);
+                const encodedLink = encodeURIComponent(link);
+                
+                const response = await fetch(`${API_URL}?cookie=${encodedCookie}&link=${encodedLink}&limit=${limit}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data && data.status === true) {
+                    showSuccess({
+                        requested: limit,
+                        completed: data.success_count || 0,
+                        message: data.message || 'Auto share completed successfully'
+                    });
+                } else {
+                    showError(data?.message || 'Share failed. Please check your inputs.');
+                }
+            } catch (error) {
+                console.error('AutoShare error:', error);
+                showError('Network error. Please try again later.');
+            } finally {
+                isProcessing = false;
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start AutoShare';
+            }
+        });
+
+        function showLoading() {
+            resultSection.innerHTML = `
+                <div class="result-header">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    <h3>Processing</h3>
+                </div>
+                <div class="loading">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    <p>AutoShare in progress...</p>
+                    <p style="font-size: 0.8rem; margin-top: 10px;">This may take a few moments depending on the limit.</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            resultSection.innerHTML = `
+                <div class="result-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error</h3>
+                </div>
+                <div class="error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function showSuccess(data) {
+            const successRate = Math.round((data.completed / data.requested) * 100);
+            
+            resultSection.innerHTML = `
+                <div class="result-header">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>AutoShare Complete!</h3>
+                </div>
+                <div class="success-result">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${data.requested}</div>
+                            <div class="stat-label">Requested Shares</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.completed}</div>
+                            <div class="stat-label">Completed Shares</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${successRate}%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 20px; color: #27ae60; font-weight: 500;">
+                        <i class="fas fa-check-circle"></i> ${data.message}
+                    </p>
+                    <p style="margin-top: 15px; font-size: 0.8rem; color: #64748b;">
+                        <i class="fas fa-info-circle"></i> You can start another share process now.
+                    </p>
+                </div>
+            `;
+        }
+
+        // Enter key support
+        linkInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
