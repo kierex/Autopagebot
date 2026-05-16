@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Media Downloader - AutoPageBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        .platforms {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .platform-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .platform-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.25);
+        }
+
+        .platform-card.active {
+            background: rgba(255,255,255,0.3);
+            border-color: #fff;
+        }
+
+        .platform-card i {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .platform-card span {
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .input-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+        }
+
+        .input-group button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+
+        .input-group button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            min-height: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-header i {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        .result-header h3 {
+            font-size: 1.2rem;
+            color: #1a1a2e;
+        }
+
+        .result-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .media-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+
+        .media-card:hover {
+            background: #f1f5f9;
+            transform: translateX(5px);
+        }
+
+        .media-info {
+            flex: 1;
+        }
+
+        .media-title {
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .media-meta {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .download-btn {
+            padding: 10px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .download-btn:hover {
+            background: #219a52;
+            transform: scale(1.02);
+        }
+
+        .media-thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #e2e8f0;
+        }
+
+        .media-with-thumb {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #e74c3c;
+        }
+
+        .error i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .input-section, .result-section {
+                background: rgba(18, 18, 30, 0.95);
+            }
+            .input-group input {
+                background: #1a1a2e;
+                color: white;
+                border-color: #2d2d44;
+            }
+            .result-header h3 {
+                color: #eef2ff;
+            }
+            .media-card {
+                background: #1a1c2e;
+            }
+            .media-card:hover {
+                background: #2d2d44;
+            }
+            .media-title {
+                color: #eef2ff;
+            }
+            .media-meta {
+                color: #94a3b8;
+            }
+            .media-thumbnail {
+                background: #2d2d44;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .platforms {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .media-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            .media-with-thumb {
+                flex-direction: column;
+            }
+            .download-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+        <div class="header">
+            <h1><i class="fas fa-download"></i> Media Downloader</h1>
+            <p>Download videos, reels, and posts from TikTok, Instagram, YouTube, Spotify, and Facebook</p>
+        </div>
+
+        <div class="platforms">
+            <div class="platform-card active" data-platform="tiktok">
+                <i class="fab fa-tiktok"></i>
+                <span>TikTok</span>
+            </div>
+            <div class="platform-card" data-platform="instagram">
+                <i class="fab fa-instagram"></i>
+                <span>Instagram</span>
+            </div>
+            <div class="platform-card" data-platform="youtube">
+                <i class="fab fa-youtube"></i>
+                <span>YouTube</span>
+            </div>
+            <div class="platform-card" data-platform="spotify">
+                <i class="fab fa-spotify"></i>
+                <span>Spotify</span>
+            </div>
+            <div class="platform-card" data-platform="facebook">
+                <i class="fab fa-facebook"></i>
+                <span>Facebook</span>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Paste TikTok video URL...">
+                <button id="downloadBtn"><i class="fas fa-cloud-download-alt"></i> Download</button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-header">
+                <i class="fas fa-info-circle"></i>
+                <h3>Ready to Download</h3>
+            </div>
+            <div class="result-content">
+                <p style="text-align: center; color: #64748b; padding: 20px;">
+                    <i class="fas fa-share-alt" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                    Paste a link from TikTok, Instagram, YouTube, Spotify, or Facebook to get started.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlatform = 'tiktok';
+
+        document.querySelectorAll('.platform-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                currentPlatform = card.dataset.platform;
+                
+                const input = document.getElementById('urlInput');
+                const placeholders = {
+                    tiktok: 'Paste TikTok video URL...',
+                    instagram: 'Paste Instagram reel/post URL...',
+                    youtube: 'Paste YouTube video URL...',
+                    spotify: 'Paste Spotify track URL...',
+                    facebook: 'Paste Facebook video/reel URL...'
+                };
+                input.placeholder = placeholders[currentPlatform];
+            });
+        });
+
+        const downloadBtn = document.getElementById('downloadBtn');
+        const urlInput = document.getElementById('urlInput');
+        const resultSection = document.getElementById('resultSection');
+
+        downloadBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                showError('Please enter a valid URL');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                let apiUrl = '';
+                switch(currentPlatform) {
+                    case 'tiktok':
+                        apiUrl = `/api/tiktok?url=${encodeURIComponent(url)}`;
+                        break;
+                    case 'instagram':
+                        apiUrl = `/api/instagram?url=${encodeURIComponent(url)}`;
+                        break;
+                    case 'youtube':
+                        apiUrl = `/api/youtube?url=${encodeURIComponent(url)}`;
+                        break;
+                    case 'spotify':
+                        apiUrl = `/api/spotify?url=${encodeURIComponent(url)}`;
+                        break;
+                    case 'facebook':
+                        apiUrl = `/api/facebook?url=${encodeURIComponent(url)}`;
+                        break;
+                }
+
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data && data.success) {
+                    displayResult(data, currentPlatform);
+                } else {
+                    showError(data?.error || 'Failed to fetch media. Please check the URL and try again.');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                showError('Network error. Please try again later.');
+            }
+        });
+
+        function showLoading() {
+            resultSection.innerHTML = `
+                <div class="result-header">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    <h3>Processing</h3>
+                </div>
+                <div class="loading">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    <p>Fetching media information...</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            resultSection.innerHTML = `
+                <div class="result-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error</h3>
+                </div>
+                <div class="error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function displayResult(data, platform) {
+            let html = '';
+            
+            switch(platform) {
+                case 'tiktok':
+                    html = `
+                        <div class="result-header">
+                            <i class="fab fa-tiktok"></i>
+                            <h3>TikTok Downloader</h3>
+                        </div>
+                        <div class="result-content">
+                            ${data.data?.video ? `
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fas fa-video"></i> Video</div>
+                                </div>
+                                <a href="${data.data.video}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Video
+                                </a>
+                            </div>
+                            ` : ''}
+                            ${data.data?.audio ? `
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fas fa-music"></i> Audio</div>
+                                </div>
+                                <a href="${data.data.audio}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Audio
+                                </a>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    break;
+
+                case 'instagram':
+                    const mediaItems = data.data?.media || [];
+                    html = `
+                        <div class="result-header">
+                            <i class="fab fa-instagram"></i>
+                            <h3>Instagram Downloader</h3>
+                        </div>
+                        <div class="result-content">
+                            ${mediaItems.map(item => `
+                                <div class="media-card">
+                                    <div class="media-info">
+                                        <div class="media-title">
+                                            <i class="fas ${item.type === 'video' ? 'fa-video' : 'fa-image'}"></i> 
+                                            ${item.type === 'video' ? 'Video' : 'Image'}
+                                        </div>
+                                    </div>
+                                    <a href="${item.url}" class="download-btn" download target="_blank">
+                                        <i class="fas fa-download"></i> Download ${item.type === 'video' ? 'Video' : 'Image'}
+                                    </a>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    break;
+
+                case 'youtube':
+                    html = `
+                        <div class="result-header">
+                            <i class="fab fa-youtube"></i>
+                            <h3>YouTube Downloader</h3>
+                        </div>
+                        <div class="result-content">
+                            ${data.title ? `<div class="media-title" style="padding:0 0 10px 0;"><i class="fas fa-heading"></i> Title: ${escapeHtml(data.title)}</div>` : ''}
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fas fa-music"></i> MP3 Audio</div>
+                                </div>
+                                <a href="${data.mp3}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download MP3
+                                </a>
+                            </div>
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fas fa-video"></i> MP4 Video</div>
+                                </div>
+                                <a href="${data.mp4}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download MP4
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'spotify':
+                    html = `
+                        <div class="result-header">
+                            <i class="fab fa-spotify"></i>
+                            <h3>Spotify Downloader</h3>
+                        </div>
+                        <div class="result-content">
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title">
+                                        <i class="fas fa-music"></i> ${data.data?.title || 'Audio Track'}
+                                    </div>
+                                    ${data.data?.artist ? `<div class="media-meta">Artist: ${escapeHtml(data.data.artist)}</div>` : ''}
+                                </div>
+                                <a href="${data.data?.download}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Audio
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'facebook':
+                    html = `
+                        <div class="result-header">
+                            <i class="fab fa-facebook"></i>
+                            <h3>Facebook Downloader</h3>
+                        </div>
+                        <div class="result-content">
+                            ${data.title ? `<div class="media-title" style="padding:0 0 10px 0;"><i class="fas fa-heading"></i> ${escapeHtml(data.title)}</div>` : ''}
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fas fa-video"></i> Video</div>
+                                </div>
+                                <a href="${data.videoUrl}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Video
+                                </a>
+                            </div>
+                            ${data.thumbnail ? `
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fas fa-image"></i> Thumbnail</div>
+                                </div>
+                                <a href="${data.thumbnail}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Thumbnail
+                                </a>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    break;
+            }
+
+            resultSection.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                downloadBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
