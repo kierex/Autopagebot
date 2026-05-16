@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Media Downloader - AutoPageBot</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -48,7 +49,7 @@
 
         .platforms {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 12px;
             margin-bottom: 30px;
         }
@@ -84,7 +85,7 @@
         .platform-card span {
             color: white;
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .input-section {
@@ -131,6 +132,10 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .input-group button i {
+            font-size: 1rem;
         }
 
         .input-group button:hover {
@@ -203,6 +208,9 @@
             color: #1a1a2e;
             margin-bottom: 5px;
             word-break: break-word;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .media-meta {
@@ -224,6 +232,10 @@
             gap: 8px;
             transition: all 0.2s;
             text-decoration: none;
+        }
+
+        .download-btn i {
+            font-size: 0.9rem;
         }
 
         .download-btn:hover {
@@ -274,8 +286,24 @@
             transition: all 0.2s;
         }
 
+        .back-btn i {
+            font-size: 0.9rem;
+        }
+
         .back-btn:hover {
             background: rgba(255,255,255,0.3);
+        }
+
+        /* Website icon styling */
+        .website-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(102,126,234,0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #667eea;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -322,7 +350,7 @@
 
         <div class="header">
             <h1><i class="fas fa-download"></i> Media Downloader</h1>
-            <p>Download videos and audio from TikTok, Instagram, YouTube, Spotify, and Facebook</p>
+            <p>Download videos and audio from TikTok, Instagram, YouTube, Spotify, Facebook, and SoundCloud</p>
         </div>
 
         <div class="platforms">
@@ -346,12 +374,16 @@
                 <i class="fab fa-facebook"></i>
                 <span>Facebook</span>
             </div>
+            <div class="platform-card" data-platform="soundcloud">
+                <i class="fab fa-soundcloud"></i>
+                <span>SoundCloud</span>
+            </div>
         </div>
 
         <div class="input-section">
             <div class="input-group">
                 <input type="text" id="urlInput" placeholder="Paste TikTok video URL...">
-                <button id="downloadBtn"><i class="fas fa-cloud-download-alt"></i> Download</button>
+                <button id="downloadBtn"><i class="fas fa-download"></i> Download</button>
             </div>
         </div>
 
@@ -362,8 +394,8 @@
             </div>
             <div class="result-content">
                 <p style="text-align: center; color: #64748b; padding: 20px;">
-                    <i class="fas fa-share-alt" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                    Paste a link from TikTok, Instagram, YouTube, Spotify, or Facebook to get started.
+                    <i class="fas fa-download" style="font-size: 3rem; margin-bottom: 10px; display: block; color: #667eea;"></i>
+                    Paste a link from TikTok, Instagram, YouTube, Spotify, Facebook, or SoundCloud to get started.
                 </p>
             </div>
         </div>
@@ -373,10 +405,11 @@
         // API Configuration - Direct API endpoints
         const API_ENDPOINTS = {
             tiktok: (url) => `https://api.zenithapi.qzz.io/tiktok?url=${encodeURIComponent(url)}`,
-            instagram: (url) => `https://api.zenithapi.qzz.io/instagram?url=${encodeURIComponent(url)}`,
+            instagram: (url) => `https://api-library-kohi.onrender.com/api/alldl?url=${encodeURIComponent(url)}`,
             youtube: (url) => `https://jonell.ccprojects.gleeze.com/api/d/youtubedl?url=${encodeURIComponent(url)}`,
             spotify: (url) => `https://api.zenithapi.qzz.io/spotify?url=${encodeURIComponent(url)}`,
-            facebook: (url) => `https://yin-api.vercel.app/downloader/fbdl?url=${encodeURIComponent(url)}`
+            facebook: (url) => `https://api-library-kohi.onrender.com/api/alldl?url=${encodeURIComponent(url)}`,
+            soundcloud: (url) => `https://jonell.ccprojects.gleeze.com/api/soundcloud?url=${encodeURIComponent(url)}`
         };
 
         let currentPlatform = 'tiktok';
@@ -394,7 +427,8 @@
                     instagram: 'Paste Instagram reel/post URL...',
                     youtube: 'Paste YouTube video URL...',
                     spotify: 'Paste Spotify track URL...',
-                    facebook: 'Paste Facebook video/reel URL...'
+                    facebook: 'Paste Facebook video/reel URL...',
+                    soundcloud: 'Paste SoundCloud track URL...'
                 };
                 input.placeholder = placeholders[currentPlatform];
             });
@@ -418,11 +452,13 @@
                 const response = await fetch(apiUrl);
                 const data = await response.json();
 
-                if (data && data.success !== false) {
+                if (data && (data.status === true || data.success !== false)) {
                     displayResult(data, currentPlatform);
                 } else if (data && (data.mp3 || data.mp4)) {
                     displayResult(data, currentPlatform);
                 } else if (data && data.answer) {
+                    displayResult(data, currentPlatform);
+                } else if (data && data.title && data.url) {
                     displayResult(data, currentPlatform);
                 } else {
                     showError(data?.message || data?.error || 'Failed to fetch media. Please check the URL and try again.');
@@ -440,7 +476,7 @@
                     <h3>Processing</h3>
                 </div>
                 <div class="loading">
-                    <i class="fas fa-spinner fa-pulse"></i>
+                    <i class="fas fa-download fa-pulse"></i>
                     <p>Fetching media information...</p>
                 </div>
             `;
@@ -496,27 +532,23 @@
                     break;
 
                 case 'instagram':
-                    const mediaItems = data.data?.media || [];
                     html = `
                         <div class="result-header">
                             <i class="fab fa-instagram"></i>
                             <h3>Instagram Downloader</h3>
                         </div>
                         <div class="result-content">
-                            ${mediaItems.map(item => `
-                                <div class="media-card">
-                                    <div class="media-info">
-                                        <div class="media-title">
-                                            <i class="fas ${item.type === 'video' ? 'fa-video' : 'fa-image'}"></i> 
-                                            ${item.type === 'video' ? 'Video' : 'Image'}
-                                        </div>
-                                    </div>
-                                    <a href="${item.url}" class="download-btn" download target="_blank">
-                                        <i class="fas fa-download"></i> Download ${item.type === 'video' ? 'Video' : 'Image'}
-                                    </a>
+                            ${data.data?.videoUrl ? `
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fab fa-instagram"></i> ${data.data?.platform || 'Instagram'} Video</div>
                                 </div>
-                            `).join('')}
-                            ${mediaItems.length === 0 ? '<p style="text-align:center;padding:20px;">No media found</p>' : ''}
+                                <a href="${data.data.videoUrl}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Video
+                                </a>
+                            </div>
+                            ` : ''}
+                            ${!data.data?.videoUrl ? '<p style="text-align:center;padding:20px;">No video found</p>' : ''}
                         </div>
                     `;
                     break;
@@ -578,21 +610,56 @@
                             <h3>Facebook Downloader</h3>
                         </div>
                         <div class="result-content">
-                            ${data.answer?.title ? `<div class="media-title" style="padding:0 0 10px 0;"><i class="fas fa-heading"></i> ${escapeHtml(data.answer.title)}</div>` : ''}
+                            ${data.data?.videoUrl ? `
                             <div class="media-card">
                                 <div class="media-info">
-                                    <div class="media-title"><i class="fas fa-video"></i> Video</div>
+                                    <div class="media-title"><i class="fab fa-facebook"></i> ${data.data?.platform || 'Facebook'} Video</div>
                                 </div>
-                                <a href="${data.answer?.url}" class="download-btn" download target="_blank">
+                                <a href="${data.data.videoUrl}" class="download-btn" download target="_blank">
                                     <i class="fas fa-download"></i> Download Video
                                 </a>
                             </div>
-                            ${data.answer?.thumbnail ? `
+                            ` : ''}
+                            ${data.answer?.url ? `
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title"><i class="fab fa-facebook"></i> Facebook Video</div>
+                                </div>
+                                <a href="${data.answer.url}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Video
+                                </a>
+                            </div>
+                            ` : ''}
+                            ${!data.data?.videoUrl && !data.answer?.url ? '<p style="text-align:center;padding:20px;">No video found</p>' : ''}
+                        </div>
+                    `;
+                    break;
+
+                case 'soundcloud':
+                    html = `
+                        <div class="result-header">
+                            <i class="fab fa-soundcloud"></i>
+                            <h3>SoundCloud Downloader</h3>
+                        </div>
+                        <div class="result-content">
+                            <div class="media-card">
+                                <div class="media-info">
+                                    <div class="media-title">
+                                        <i class="fas fa-music"></i> ${escapeHtml(data.title || 'Audio Track')}
+                                    </div>
+                                    ${data.user ? `<div class="media-meta">Artist: ${escapeHtml(data.user)}</div>` : ''}
+                                    ${data.duration ? `<div class="media-meta">Duration: ${Math.floor(data.duration / 1000)} seconds</div>` : ''}
+                                </div>
+                                <a href="${data.url}" class="download-btn" download target="_blank">
+                                    <i class="fas fa-download"></i> Download Audio
+                                </a>
+                            </div>
+                            ${data.thumbnail ? `
                             <div class="media-card">
                                 <div class="media-info">
                                     <div class="media-title"><i class="fas fa-image"></i> Thumbnail</div>
                                 </div>
-                                <a href="${data.answer.thumbnail}" class="download-btn" download target="_blank">
+                                <a href="${data.thumbnail}" class="download-btn" download target="_blank">
                                     <i class="fas fa-download"></i> Download Thumbnail
                                 </a>
                             </div>
