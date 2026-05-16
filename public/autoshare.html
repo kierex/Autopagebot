@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>AutoShare - Facebook Post Sharer</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -21,7 +22,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -46,27 +47,117 @@
             font-size: 0.9rem;
         }
 
+        /* Two Column Layout */
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
         .card {
             background: rgba(255,255,255,0.95);
             border-radius: 24px;
-            padding: 30px;
-            margin-bottom: 30px;
+            padding: 25px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
 
         .card h2 {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             margin-bottom: 20px;
             color: #1a1a2e;
             display: flex;
             align-items: center;
             gap: 10px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
         }
 
         .card h2 i {
             color: #667eea;
         }
 
+        /* Tutorial Steps */
+        .tutorial-steps {
+            list-style: none;
+        }
+
+        .tutorial-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .tutorial-step:hover {
+            background: #f1f5f9;
+            transform: translateX(5px);
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
+        }
+
+        .step-desc {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+
+        .step-desc a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .step-desc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Download Button */
+        .download-apk-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #27ae60 0%, #219a52 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 5px;
+            transition: all 0.2s;
+        }
+
+        .download-apk-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(39,174,96,0.3);
+        }
+
+        /* Input Groups */
         .input-group {
             margin-bottom: 20px;
         }
@@ -87,10 +178,10 @@
         .input-group input, 
         .input-group textarea {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 14px;
             border: 2px solid #e2e8f0;
             border-radius: 14px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-family: inherit;
             transition: all 0.2s;
             background: white;
@@ -105,32 +196,32 @@
 
         .input-group textarea {
             resize: vertical;
-            min-height: 100px;
+            min-height: 80px;
             font-family: monospace;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .input-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
         }
 
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             border-radius: 40px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.25s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn:hover {
@@ -144,10 +235,122 @@
             transform: none;
         }
 
+        /* Counter Section */
+        .counter-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .counter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .counter-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .counter-title i {
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .pending-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .pending-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .pending-item:hover {
+            background: #f1f5f9;
+        }
+
+        .pending-info {
+            flex: 1;
+        }
+
+        .pending-post-id {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #667eea;
+            font-family: monospace;
+        }
+
+        .pending-status {
+            font-size: 0.7rem;
+            color: #f39c12;
+            margin-top: 3px;
+        }
+
+        .pending-status.completed {
+            color: #27ae60;
+        }
+
+        .pending-status.failed {
+            color: #e74c3c;
+        }
+
+        .pending-status i {
+            font-size: 0.6rem;
+        }
+
+        .pending-progress {
+            width: 60px;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .remove-pending {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            opacity: 0.6;
+        }
+
+        .remove-pending:hover {
+            opacity: 1;
+            background: rgba(231,76,60,0.1);
+            transform: scale(1.1);
+        }
+
+        .empty-pending {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        /* Result Section */
         .result-section {
             background: rgba(255,255,255,0.95);
             border-radius: 24px;
-            padding: 30px;
+            padding: 25px;
             min-height: 200px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
@@ -162,12 +365,12 @@
         }
 
         .result-header i {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: #667eea;
         }
 
         .result-header h3 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #1a1a2e;
         }
 
@@ -178,12 +381,12 @@
 
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 30px;
             color: #64748b;
         }
 
         .loading i {
-            font-size: 2rem;
+            font-size: 1.8rem;
             margin-bottom: 10px;
             display: inline-block;
             animation: spin 1s linear infinite;
@@ -196,13 +399,13 @@
 
         .error {
             text-align: center;
-            padding: 30px;
+            padding: 25px;
             color: #e74c3c;
         }
 
         .error i {
-            font-size: 3rem;
-            margin-bottom: 15px;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
             display: block;
         }
 
@@ -211,50 +414,35 @@
         }
 
         .success-icon {
-            font-size: 4rem;
+            font-size: 3rem;
             color: #27ae60;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
         }
 
         .stat-card {
             background: #f8fafc;
             border-radius: 16px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 800;
             color: #667eea;
         }
 
         .stat-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #64748b;
             margin-top: 5px;
-        }
-
-        .info-box {
-            background: #e6f7ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            color: #333;
-        }
-
-        .info-box i {
-            color: #667eea;
-            margin-right: 8px;
         }
 
         .back-btn {
@@ -263,11 +451,12 @@
             gap: 8px;
             background: rgba(255,255,255,0.2);
             color: white;
-            padding: 10px 20px;
+            padding: 8px 18px;
             border-radius: 40px;
             text-decoration: none;
             margin-bottom: 20px;
             transition: all 0.2s;
+            font-size: 0.85rem;
         }
 
         .back-btn:hover {
@@ -275,10 +464,10 @@
         }
 
         @media (prefers-color-scheme: dark) {
-            .card, .result-section {
+            .card, .counter-section, .result-section {
                 background: rgba(18, 18, 30, 0.95);
             }
-            .card h2, .result-header h3 {
+            .card h2, .counter-title, .result-header h3 {
                 color: #eef2ff;
             }
             .input-group label {
@@ -289,23 +478,25 @@
                 color: white;
                 border-color: #2d2d44;
             }
+            .tutorial-step, .pending-item {
+                background: #1a1c2e;
+            }
+            .tutorial-step:hover, .pending-item:hover {
+                background: #2d2d44;
+            }
             .stat-card {
                 background: #1a1c2e;
             }
-            .stat-label {
+            .step-desc, .empty-pending {
                 color: #94a3b8;
-            }
-            .info-box {
-                background: #1a2a3a;
-                color: #cbd5e6;
             }
         }
 
-        @media (max-width: 600px) {
-            .input-row {
+        @media (max-width: 768px) {
+            .two-columns {
                 grid-template-columns: 1fr;
             }
-            .stats-grid {
+            .input-row {
                 grid-template-columns: 1fr;
             }
         }
@@ -320,47 +511,116 @@
             <p>Automatically share Facebook posts with your accounts</p>
         </div>
 
-        <div class="card">
-            <h2><i class="fas fa-info-circle"></i> Configuration</h2>
-            
-            <div class="info-box">
-                <i class="fas fa-lightbulb"></i>
-                <strong>How it works:</strong> This tool will automatically share a Facebook post using your Facebook cookies. The more cookies you provide, the faster the process.
-            </div>
-
-            <div class="input-group">
-                <label><i class="fas fa-key"></i> Facebook Cookies</label>
-                <textarea id="cookieInput" placeholder="Enter your Facebook cookies here...
-You can provide multiple cookies separated by semicolon (;)
-Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
-            </div>
-
-            <div class="input-group">
-                <label><i class="fas fa-link"></i> Post Link</label>
-                <input type="text" id="linkInput" placeholder="https://facebook.com/... or https://fb.com/...">
-            </div>
-
-            <div class="input-row">
-                <div class="input-group">
-                    <label><i class="fas fa-chart-line"></i> Share Limit</label>
-                    <input type="number" id="limitInput" placeholder="Enter number of shares (no maximum)" value="10" min="1">
+        <!-- Two Column Layout: Tutorial + Input -->
+        <div class="two-columns">
+            <!-- Tutorial Card -->
+            <div class="card">
+                <h2><i class="fas fa-graduation-cap"></i> How to Get Facebook Cookie</h2>
+                <ul class="tutorial-steps">
+                    <li class="tutorial-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Download FB Cookie APK</div>
+                            <div class="step-desc">
+                                <a href="https://www.mediafire.com/file/mf7hkag077nb84n/app-release.apk/file" target="_blank" class="download-apk-btn">
+                                    <i class="fas fa-download"></i> Download APK
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="tutorial-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Install & Open</div>
+                            <div class="step-desc">Install the APK on your Android device. Open the app and click <strong>"Skip"</strong> when prompted.</div>
+                        </div>
+                    </li>
+                    <li class="tutorial-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Choose Login Method</div>
+                            <div class="step-desc">Select <strong>"Web Login Method"</strong> to log in to your Facebook account.</div>
+                        </div>
+                    </li>
+                    <li class="tutorial-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Login to Facebook</div>
+                            <div class="step-desc">Enter your Facebook credentials (use a <strong>dummy account</strong> for safety).</div>
+                        </div>
+                    </li>
+                    <li class="tutorial-step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <div class="step-title">Extract Cookie</div>
+                            <div class="step-desc">After successful login, click <strong>"Extract"</strong> below, then <strong>"Copy Cookie"</strong>.</div>
+                        </div>
+                    </li>
+                    <li class="tutorial-step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <div class="step-title">Paste Here</div>
+                            <div class="step-desc">Paste the copied cookie in the textarea below.</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="warning-box" style="background: rgba(231,76,60,0.1); padding: 10px; border-radius: 12px; margin-top: 10px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i>
+                    <span style="font-size: 0.7rem; color: #e74c3c;">⚠️ Use a dummy account for safety. Never share your real account cookie!</span>
                 </div>
+            </div>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2><i class="fas fa-sliders-h"></i> Share Configuration</h2>
+                
                 <div class="input-group">
-                    <label>&nbsp;</label>
-                    <button class="btn" id="startBtn"><i class="fas fa-play"></i> Start AutoShare</button>
+                    <label><i class="fas fa-key"></i> Facebook Cookies</label>
+                    <textarea id="cookieInput" placeholder="Paste your Facebook cookies here..."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-link"></i> Post Link</label>
+                    <input type="text" id="linkInput" placeholder="https://facebook.com/... or https://fb.com/...">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label><i class="fas fa-chart-line"></i> Share Limit</label>
+                        <input type="number" id="limitInput" placeholder="Number of shares" value="10" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label>&nbsp;</label>
+                        <button class="btn" id="startBtn"><i class="fas fa-play"></i> Start AutoShare</button>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Live Counter Section -->
+        <div class="counter-section">
+            <div class="counter-header">
+                <div class="counter-title">
+                    <i class="fas fa-clock"></i> Pending Shares
+                </div>
+            </div>
+            <div id="pendingList" class="pending-list">
+                <div class="empty-pending">
+                    <i class="fas fa-inbox"></i> No pending shares
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Section -->
         <div class="result-section" id="resultSection">
             <div class="result-header">
-                <i class="fas fa-clock"></i>
+                <i class="fas fa-info-circle"></i>
                 <h3>Ready to Start</h3>
             </div>
             <div class="result-content">
-                <i class="fas fa-share-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 15px; display: block;"></i>
+                <i class="fas fa-share-alt" style="font-size: 2.5rem; color: #667eea; margin-bottom: 12px; display: block;"></i>
                 <p>Enter your Facebook cookies and post link above, then click "Start AutoShare".</p>
-                <p style="font-size: 0.8rem; margin-top: 10px; color: #64748b;">⚠️ No maximum limit - share as many times as you want!</p>
+                <p style="font-size: 0.75rem; margin-top: 8px; color: #64748b;">⚠️ No maximum limit - share as many times as you want!</p>
             </div>
         </div>
     </div>
@@ -369,6 +629,9 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
         // API Configuration
         const API_URL = "https://vern-rest-api.vercel.app/api/share";
 
+        // Store pending shares
+        let pendingShares = JSON.parse(localStorage.getItem('autoShare_pending') || '[]');
+
         let isProcessing = false;
 
         const startBtn = document.getElementById('startBtn');
@@ -376,6 +639,119 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
         const linkInput = document.getElementById('linkInput');
         const limitInput = document.getElementById('limitInput');
         const resultSection = document.getElementById('resultSection');
+
+        // Save pending shares to localStorage
+        function savePendingShares() {
+            localStorage.setItem('autoShare_pending', JSON.stringify(pendingShares));
+            renderPendingList();
+        }
+
+        // Render pending list
+        function renderPendingList() {
+            const container = document.getElementById('pendingList');
+            
+            if (pendingShares.length === 0) {
+                container.innerHTML = '<div class="empty-pending"><i class="fas fa-inbox"></i> No pending shares</div>';
+                return;
+            }
+
+            container.innerHTML = pendingShares.map((share, index) => {
+                let statusClass = '';
+                let statusIcon = '<i class="fas fa-spinner fa-pulse"></i>';
+                let statusText = `${share.completed}/${share.limit} completed`;
+                
+                if (share.status === 'completed') {
+                    statusClass = 'completed';
+                    statusIcon = '<i class="fas fa-check-circle"></i>';
+                    statusText = 'Completed!';
+                } else if (share.status === 'failed') {
+                    statusClass = 'failed';
+                    statusIcon = '<i class="fas fa-times-circle"></i>';
+                    statusText = share.error || 'Failed';
+                } else if (share.status === 'processing') {
+                    statusIcon = '<i class="fas fa-spinner fa-pulse"></i>';
+                    statusText = `${share.completed}/${share.limit} completed`;
+                } else {
+                    statusIcon = '<i class="fas fa-hourglass-half"></i>';
+                    statusText = 'Pending';
+                }
+                
+                return `
+                    <div class="pending-item" data-id="${share.postId}">
+                        <div class="pending-info">
+                            <div class="pending-post-id"><i class="fab fa-facebook"></i> ${share.postId}</div>
+                            <div class="pending-status ${statusClass}">
+                                ${statusIcon} ${statusText}
+                            </div>
+                        </div>
+                        <div class="pending-progress">${share.completed ? Math.round((share.completed / share.limit) * 100) : 0}%</div>
+                        <button class="remove-pending" onclick="removePending('${share.postId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Remove pending share manually
+        window.removePending = function(postId) {
+            if (confirm('Remove this pending share?')) {
+                pendingShares = pendingShares.filter(s => s.postId !== postId);
+                savePendingShares();
+            }
+        }
+
+        // Update pending share progress and auto-remove
+        function updatePendingProgress(postId, completed, status, errorMsg = null) {
+            const shareIndex = pendingShares.findIndex(s => s.postId === postId);
+            if (shareIndex !== -1) {
+                const share = pendingShares[shareIndex];
+                share.completed = completed;
+                
+                if (status === 'completed') {
+                    share.status = 'completed';
+                    // Auto-remove after 3 seconds when completed
+                    setTimeout(() => {
+                        pendingShares = pendingShares.filter(s => s.postId !== postId);
+                        savePendingShares();
+                    }, 3000);
+                } else if (status === 'failed') {
+                    share.status = 'failed';
+                    share.error = errorMsg;
+                    // Auto-remove after 5 seconds when failed
+                    setTimeout(() => {
+                        pendingShares = pendingShares.filter(s => s.postId !== postId);
+                        savePendingShares();
+                    }, 5000);
+                } else {
+                    share.status = status || 'processing';
+                }
+                
+                savePendingShares();
+            }
+        }
+
+        // Add new pending share
+        function addPendingShare(postId, link, limit) {
+            // Check if already exists
+            if (!pendingShares.find(s => s.postId === postId)) {
+                pendingShares.push({
+                    postId: postId,
+                    link: link,
+                    limit: limit,
+                    completed: 0,
+                    status: 'pending',
+                    timestamp: Date.now()
+                });
+                savePendingShares();
+            }
+        }
+
+        // Extract post ID from link
+        function extractPostId(link) {
+            const match = link.match(/(?:facebook\.com|fb\.com)\/(?:\w+\/)?(?:posts\/)?(\d+)/);
+            return match ? match[1] : link.replace(/[^a-zA-Z0-9]/g, '_');
+        }
 
         startBtn.addEventListener('click', async () => {
             if (isProcessing) {
@@ -407,6 +783,10 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
                 return;
             }
 
+            const postId = extractPostId(link);
+            addPendingShare(postId, link, limit);
+            updatePendingProgress(postId, 0, 'processing');
+
             isProcessing = true;
             startBtn.disabled = true;
             startBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Processing...';
@@ -427,16 +807,21 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
                 const data = await response.json();
 
                 if (data && data.status === true) {
+                    const completed = data.success_count || limit;
+                    updatePendingProgress(postId, completed, 'completed');
                     showSuccess({
                         requested: limit,
-                        completed: data.success_count || 0,
+                        completed: completed,
                         message: data.message || 'Auto share completed successfully'
                     });
                 } else {
-                    showError(data?.message || 'Share failed. Please check your inputs.');
+                    const errorMsg = data?.message || 'Share failed. Please check your inputs.';
+                    updatePendingProgress(postId, 0, 'failed', errorMsg);
+                    showError(errorMsg);
                 }
             } catch (error) {
                 console.error('AutoShare error:', error);
+                updatePendingProgress(postId, 0, 'failed', 'Network error. Please try again later.');
                 showError('Network error. Please try again later.');
             } finally {
                 isProcessing = false;
@@ -454,7 +839,7 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
                 <div class="loading">
                     <i class="fas fa-spinner fa-pulse"></i>
                     <p>AutoShare in progress...</p>
-                    <p style="font-size: 0.8rem; margin-top: 10px;">This may take a few moments depending on the limit.</p>
+                    <p style="font-size: 0.75rem; margin-top: 8px;">This may take a few moments depending on the limit.</p>
                 </div>
             `;
         }
@@ -498,10 +883,10 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
                             <div class="stat-label">Success Rate</div>
                         </div>
                     </div>
-                    <p style="margin-top: 20px; color: #27ae60; font-weight: 500;">
+                    <p style="margin-top: 15px; color: #27ae60; font-weight: 500;">
                         <i class="fas fa-check-circle"></i> ${data.message}
                     </p>
-                    <p style="margin-top: 15px; font-size: 0.8rem; color: #64748b;">
+                    <p style="margin-top: 12px; font-size: 0.75rem; color: #64748b;">
                         <i class="fas fa-info-circle"></i> You can start another share process now.
                     </p>
                 </div>
@@ -514,6 +899,9 @@ Example: c_user=123456; xs=abc123; fr=xyz789; datr=def456;"></textarea>
                 startBtn.click();
             }
         });
+
+        // Initial render
+        renderPendingList();
     </script>
 </body>
 </html>
