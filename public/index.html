@@ -161,6 +161,18 @@
         }
         .sidebar-footer .menu-item { padding: 10px; margin: 0; }
 
+        /* External tool buttons */
+        .menu-item.external-tool {
+            background: rgba(102,126,234,0.1);
+            margin-top: 8px;
+            border: 1px solid rgba(102,126,234,0.2);
+        }
+        .menu-item.external-tool i:last-child {
+            margin-left: auto;
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
         .theme-toggle {
             position: fixed;
             top: 20px;
@@ -285,7 +297,6 @@
             transform: translateX(5px);
         }
 
-        /* Profile Thumbnail - NASA GILID */
         .session-profile {
             flex-shrink: 0;
             width: 55px;
@@ -315,12 +326,10 @@
             color: white;
         }
 
-        /* Content area - PANTAY ANG MGA DETAILS */
         .session-content {
             flex: 1;
         }
 
-        /* Page name row */
         .session-name-row {
             margin-bottom: 8px;
         }
@@ -344,7 +353,6 @@
             margin-left: 8px;
         }
 
-        /* Details grid - PANTAY ANG ALIGNMENT */
         .session-details {
             display: flex;
             flex-wrap: wrap;
@@ -503,6 +511,18 @@
             font-size: 1.2rem;
             color: white;
         }
+        .step-content {
+            padding-left: 55px;
+        }
+        .step-content ul, .step-content ol {
+            margin-left: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .step-content li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
         .warning-box, .success-box {
             padding: 12px;
             border-radius: 14px;
@@ -572,6 +592,8 @@
             .menu-toggle { display: block; }
             .dashboard-stats { grid-template-columns: 1fr 1fr; }
             .session-details { flex-direction: column; gap: 8px; }
+            .step-content { padding-left: 0; }
+            .step-header { flex-wrap: wrap; }
         }
         @media (max-width: 500px) {
             .dashboard-stats { grid-template-columns: 1fr; }
@@ -626,6 +648,17 @@
                     <i class="fas fa-graduation-cap"></i>
                     <span>Tutorial</span>
                 </div>
+                <!-- External Tools -->
+                <div class="menu-item external-tool" onclick="window.open('/downloader.html', '_blank')">
+                    <i class="fas fa-download"></i>
+                    <span>Media Downloader</span>
+                    <i class="fas fa-external-link-alt"></i>
+                </div>
+                <div class="menu-item external-tool" onclick="window.open('/autoshare.html', '_blank')">
+                    <i class="fas fa-share-alt"></i>
+                    <span>AutoShare</span>
+                    <i class="fas fa-external-link-alt"></i>
+                </div>
             </div>
 
             <div class="sidebar-footer">
@@ -649,7 +682,6 @@
                     <p>Messenger Automation Platform</p>
                 </div>
 
-                <!-- BANNER WITH RED BREATHING BORDER -->
                 <div class="banner">
                     <img src="https://cdnb.artstation.com/p/assets/images/images/066/149/065/original/killer-rabbit-media-chinese-alleyway-export.gif?1692171513" alt="AutoPageBot Banner">
                 </div>
@@ -710,28 +742,23 @@
                 <div class="card">
                     <h2><i class="fas fa-plug"></i> Connect / Disconnect Page</h2>
                     <p>Paste your Page Token to link your Facebook page. Use the same token to disconnect.</p>
-
                     <form id="connectForm">
                         <div class="input-group">
                             <label><i class="fas fa-user"></i> PAGE OWNER (OPTIONAL)</label>
                             <input type="text" id="userName" placeholder="e.g. John Smith">
                         </div>
-
                         <div class="input-group">
                             <label><i class="fas fa-tag"></i> PAGE NAME (OPTIONAL)</label>
                             <input type="text" id="pageName" placeholder="e.g. Auto Page Bot">
                         </div>
-
                         <div class="input-group">
                             <label><i class="fas fa-key"></i> PAGE TOKEN (REQUIRED) *</label>
                             <textarea id="pageToken" rows="3" placeholder="Paste your Page Access Token here..."></textarea>
                         </div>
-
                         <div class="checkbox-group">
                             <input type="checkbox" id="agreeTerms">
                             <label for="agreeTerms">I agree to the <a href="#" id="privacyLink" style="color: #667eea;">Privacy Policy</a> and Terms of Service</label>
                         </div>
-
                         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <button type="submit" class="btn-connect" id="connectBtn" disabled style="flex: 1;">
                                 <i class="fas fa-link"></i> Connect Page →
@@ -741,7 +768,6 @@
                             </button>
                         </div>
                     </form>
-
                     <div id="message" class="message"></div>
                 </div>
             </div>
@@ -791,41 +817,134 @@
                 </div>
             </div>
 
-            <!-- Tutorial Section -->
+            <!-- Tutorial Section - Updated for AutoPageBot -->
             <div id="tutorial-section" class="section">
                 <div class="card">
-                    <h2><i class="fas fa-graduation-cap"></i> 🤖 AutoPageBot Setup Tutorial</h2>
+                    <h2><i class="fas fa-graduation-cap"></i> AutoPageBot Setup Tutorial</h2>
                     <p>Complete guide to creating and deploying your Facebook Messenger bot</p>
                     <div class="tutorial-container">
                         <div class="tutorial-step">
-                            <div class="step-header"><div class="step-number">📋</div><div class="step-title">Prerequisites</div></div>
-                            <div class="step-content"><ul><li>A Facebook account</li><li>developer.facebook.com access</li></ul></div>
-                        </div>
-                        <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">1</div><div class="step-title">Initial Facebook Setup</div></div>
-                            <div class="step-content"><ol><li>Log in to Facebook</li><li>Create a Facebook Page</li><li>Go to developers.facebook.com/apps</li></ol></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>Open your web browser and log in to your Facebook account</li>
+                                    <li>Create a Facebook Page (if you don't have one already)</li>
+                                    <li>Navigate to <a href="https://developers.facebook.com/apps" target="_blank">developers.facebook.com/apps</a></li>
+                                </ol>
+                            </div>
                         </div>
+
                         <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">2</div><div class="step-title">Create a Facebook App</div></div>
-                            <div class="step-content"><ol><li>Click "Create App"</li><li>Select "Business" as type</li><li>Fill in details and click "Create App"</li></ol></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>Click on <strong>"Create App"</strong></li>
+                                    <li>Select <strong>"Business"</strong> as the app type</li>
+                                    <li>Fill in the required details:
+                                        <ul>
+                                            <li>App Display Name</li>
+                                            <li>Contact Email</li>
+                                        </ul>
+                                    </li>
+                                    <li>Click <strong>"Create App"</strong></li>
+                                </ol>
+                            </div>
                         </div>
+
                         <div class="tutorial-step">
-                            <div class="step-header"><div class="step-number">3</div><div class="step-title">Generate Access Token</div></div>
-                            <div class="step-content"><ol><li>Add Messenger product</li><li>Connect your Facebook Page</li><li>Generate and copy Page Access Token</li></ol>
-                            <div class="warning-box">⚠️ Save this token securely!</div></div>
+                            <div class="step-header"><div class="step-number">3</div><div class="step-title">Add Messenger and Generate Access Token</div></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>In your app dashboard, click <strong>"Add Product"</strong></li>
+                                    <li>Find <strong>"Messenger"</strong> and click <strong>"Set Up"</strong></li>
+                                    <li>Scroll to the <strong>"Access Tokens"</strong> section</li>
+                                    <li>Click <strong>"Add or Remove Pages"</strong> and connect your Facebook Page</li>
+                                    <li>Click <strong>"Generate Token"</strong> and copy the Page Access Token</li>
+                                </ol>
+                                <div class="warning-box">⚠️ Save this token securely! You'll need it in the next step.</div>
+                            </div>
                         </div>
+
                         <div class="tutorial-step">
-                            <div class="step-header"><div class="step-number">4</div><div class="step-title">Connect Page</div></div>
-                            <div class="step-content"><ol><li>Go to Connect Page section</li><li>Enter name and paste token</li><li>Click Connect Page</li></ol></div>
+                            <div class="step-header"><div class="step-number">4</div><div class="step-title">Configure Your Project and Deploy</div></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>Go to your project repository (GitHub, GitLab, etc.)</li>
+                                    <li>Make sure your `storage/tokens.json` is properly configured or use the Connect Page section in the dashboard</li>
+                                    <li>Deploy your project to <strong>Render</strong> or <strong>Railway</strong>:
+                                        <ul>
+                                            <li><strong>Render:</strong> Get the live link (e.g., <code>https://your-app.onrender.com</code>)</li>
+                                            <li><strong>Railway:</strong> Get the public domain URL</li>
+                                        </ul>
+                                    </li>
+                                </ol>
+                                <div class="info-box">💡 Make sure your deployment is successful and the app is running before proceeding!</div>
+                            </div>
                         </div>
+
                         <div class="tutorial-step">
                             <div class="step-header"><div class="step-number">5</div><div class="step-title">Set Up Webhooks</div></div>
-                            <div class="step-content"><ol><li>Go to Messenger API Settings</li><li>Add Callback URL: <code id="tutorialWebhookUrl">loading...</code></li><li>Verify Token: <code>autopagebot</code></li><li>Subscribe to messages, messaging_postbacks</li></ol></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>Go back to your Facebook app dashboard</li>
+                                    <li>Navigate to <strong>Messenger API Settings</strong> → <strong>Webhooks</strong></li>
+                                    <li>Click <strong>"Add Callback URL"</strong> or <strong>"Setup Webhooks"</strong></li>
+                                    <li>Enter the following:
+                                        <ul>
+                                            <li><strong>Callback URL:</strong> <code id="tutorialWebhookUrl">loading...</code></li>
+                                            <li><strong>Verify Token:</strong> <code>autopagebot</code></li>
+                                        </ul>
+                                    </li>
+                                    <li>Subscribe to these fields:
+                                        <ul>
+                                            <li><code>messages</code></li>
+                                            <li><code>messaging_optins</code></li>
+                                            <li><code>messaging_postbacks</code></li>
+                                        </ul>
+                                    </li>
+                                    <li>Click <strong>"Verify and Save"</strong></li>
+                                    <li>Add your page subscription to complete the webhook setup</li>
+                                </ol>
+                            </div>
                         </div>
+
                         <div class="tutorial-step">
-                            <div class="step-header"><div class="step-number">6</div><div class="step-title">Make App Live</div></div>
-                            <div class="step-content"><ol><li>Toggle app from Development to Live</li><li>Generate new token and reconnect</li></ol>
-                            <div class="success-box">✅ Your bot is now live!</div></div>
+                            <div class="step-header"><div class="step-number">6</div><div class="step-title">Configure Privacy Policy (Required for Public App)</div></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>Go to <a href="https://www.freeprivacypolicy.com/free-privacy-policy-generator/" target="_blank">Free Privacy Policy Generator</a></li>
+                                    <li>Generate your free privacy policy</li>
+                                    <li>Copy the privacy policy URL</li>
+                                    <li>In your Facebook app dashboard, go to <strong>App Settings</strong> → <strong>Basic</strong></li>
+                                    <li>Scroll to <strong>"Privacy Policy URL"</strong> and paste your privacy policy link</li>
+                                    <li>Save the changes</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">7</div><div class="step-title">Make Your App Live</div></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>In your app dashboard, look for the toggle to make your app <strong>"Live"</strong></li>
+                                    <li>Switch your app from "Development" mode to "Live" mode</li>
+                                    <li>After making it live, generate a <strong>new Page Access Token</strong></li>
+                                    <li>Update your connection using the Connect Page section in this dashboard</li>
+                                    <li>Redeploy your project if necessary</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="tutorial-step">
+                            <div class="step-header"><div class="step-number">8</div><div class="step-title">Test Your Messenger Bot</div></div>
+                            <div class="step-content">
+                                <ol>
+                                    <li>Go to your Facebook Page</li>
+                                    <li>Send a message to your page (e.g., type "help" to see available commands)</li>
+                                    <li>Check if the bot responds correctly</li>
+                                </ol>
+                                <div class="success-box">✅ Success! If your bot responds, congratulations! Your Messenger bot is now live and working!</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -998,7 +1117,7 @@
             } catch(err) { showMessage(`Failed: ${err.message}`, 'error'); }
         });
 
-        // Sessions Loader with Profile Thumbnails (Connected line removed)
+        // Sessions Loader
         let sessionStartTimes = new Map();
         function formatUptime(sec) {
             if(sec<0) sec=0;
@@ -1008,7 +1127,6 @@
             return `${m}m`;
         }
 
-        // Get Facebook Page Profile Picture URL
         function getProfilePictureUrl(pageId) {
             return `https://graph.facebook.com/${pageId}/picture?type=large&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
         }
@@ -1029,7 +1147,6 @@
                 const html = data.sessions.map(s => {
                     const uptimeSec = Math.floor((now - new Date(s.connectedAt).getTime())/1000);
                     const profileImgUrl = getProfilePictureUrl(s.id);
-                    
                     return `<div class="session-card">
                         <div class="session-profile">
                             <img src="${profileImgUrl}" alt="${escapeHtml(s.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'profile-placeholder\\'><i class=\\'fab fa-facebook\\'></i></div>';">
@@ -1051,7 +1168,6 @@
                     </div>`;
                 }).join('');
                 document.getElementById('sessionsList').innerHTML = html;
-
                 if(window.uptimeInterval) clearInterval(window.uptimeInterval);
                 window.uptimeInterval = setInterval(() => {
                     document.querySelectorAll('.session-uptime').forEach(el => {
